@@ -1,0 +1,16 @@
+# IDEs
+.vscode
+
+# Python
+*.ipynb
+*.pyc
+*.log
+*.mat
+
+
+#Data
+__pycache__/
+cache/
+model/pretrained
+
+
