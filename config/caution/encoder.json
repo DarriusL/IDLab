@@ -6,7 +6,7 @@
     "data":{
         "dataset":"v3",
         "train":{
-            "dir":"data/v3/train.mat",
+            "dir":"data/v3/support.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
@@ -17,11 +17,11 @@
             }
         },
         "valid":{
-            "dir":"data/v3/valid.mat",
+            "dir":"data/v3/query.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":1,
+                "batch_size":8,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -53,7 +53,7 @@
         }
     },
     "model":{
-        "name":"caution_encodder",
+        "name":"caution_encoder",
         "do":256,
         "cnn":{
             "hid_layer":[
@@ -65,7 +65,6 @@
         },
         "FeatureLayer":{
             "hid_layers":[
-                16384,
                 2048,
                 512
             ],

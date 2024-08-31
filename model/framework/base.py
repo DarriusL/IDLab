@@ -33,8 +33,7 @@ class Net(torch.nn.Module):
         #envs:[N]
         if not self.is_Intrusion_Detection:
             #p
-            feature = self.encoder(amps);
-            id_pred = self.p_classifier(feature).argmax(dim = -1);
+            id_pred = self.p_classify(amps).argmax(dim = -1);
             acc = (id_pred == ids).cpu().float().mean().item();
         else:
             intrude_pred = self.intrusion_detection(amps);

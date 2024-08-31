@@ -12,8 +12,9 @@ device = glb_var.get_value('device');
 class Trainer():
     def __init__(self, config) -> None:
         util.set_attr(self, config['train']);
-        self.train_loader, info = data_wrapper(deepcopy(config), 'train');
-        self.valid_loader, _ = data_wrapper(deepcopy(config), 'valid');
+        self.train_loader, _ = data_wrapper(deepcopy(config), 'train');
+        self.valid_loader, info = data_wrapper(deepcopy(config), 'valid');
+        print(info)
 
         #[N, T, R, F]
         config['model']['dim_in'] = info;
@@ -184,8 +185,88 @@ class DATrainer(Trainer):
             epoch_train_acc.append(self.model.cal_accuracy(amps, ids, envs));
             epoch_train_acc.append(self.model.cal_accuracy(amps_t, ids_t, envs_t))
         return np.mean(epoch_train_loss), np.mean(epoch_train_acc);
+
+class CautionTrainer(Trainer):
+    def __init__(self, config) -> None:
+        super().__init__(config);
+        self.support_loader = self.train_loader;
+        self.query_loader = self.valid_loader;
+    
+    def _train_step(self):
+        epoch_train_loss, epoch_train_acc = [], [];
+        self.model.train();
+        for amps, ids, envs in iter(self.query_loader):
+            self.model.update_center(self.support_loader);
+            if hasattr(torch.cuda, 'empty_cache'):
+                torch.cuda.empty_cache();
+            self.optimizer.zero_grad();
+            loss = self.model.cal_loss(amps, ids, envs);
+            self._check_nan(loss);
+            loss.backward();
+            torch.nn.utils.clip_grad_norm_(
+                parameters = self.model.parameters(),
+                max_norm = 1
+            );
+            self.optimizer.step();
+            epoch_train_loss.append(loss.cpu().item());
+            epoch_train_acc.append(self.model.cal_accuracy(amps, ids, envs));
+        return np.mean(epoch_train_loss), np.mean(epoch_train_acc);
+
+
+    def train(self):
+        ACC_NAME = 'Intrusion' if self.model.is_Intrusion_Detection  else 'Identification';
+        save_dir = self.config['save_dir'];
+        train_loss, valid_loss = [], [];
+        train_acc, valid_acc = [], [];
+        for epoch in range(self.max_epoch):
+            epoch_train_loss, accuracy = self._train_step();
+            train_loss.append(epoch_train_loss);
+            train_acc.append(accuracy);
+            acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {train_acc[-1] * 100 :.6f} %';
+            logger.info(f'[{self.model.name}]-[train]-[{device}] - [{self.config["data"]["dataset"]}] - [metrics: {self.valid_metrics.lower()}]\n'
+                        f'[epoch: {epoch + 1}/{self.max_epoch}] - lr:{self.warmupScheduler.get_last_lr()[0]:.8f}\n' 
+                        f'train loss:{train_loss[-1]:.8f}\n'+
+                        acc_info);
+            self.warmupScheduler.step();
+
+        torch.save({'model':self.model, 'epoch':epoch}, save_dir + 'model_end.pt');
+        json_util.jsonsave(self.config, save_dir + 'config.json');
+        self.model.after_train_hook(self);
+        
+        from matplotlib import pyplot as plt
+        import pickle
+        fig_loss = plt.figure(figsize = (10, 6));
+        ep = np.arange(0, len(train_loss)) + 1;
+        #train loss
+        plt.plot(ep, train_loss, label = 'train loss');
+        #valid loss
+        plt.plot(np.arange(self.valid_start_epoch - 1, len(train_loss), self.valid_step) + 1, valid_loss, label = 'valid loss');
+        plt.xlabel('epoch');
+        plt.ylabel('loss');
+        plt.yscale('log');
+        plt.legend(loc='upper right')
+        plt.savefig(save_dir + 'loss.png', dpi = 400); 
+        with open(save_dir + 'ep.pkl', 'wb') as f:
+            pickle.dump(ep, f);
+        with open(save_dir + 'fig_loss.pkl', 'wb') as f:
+            pickle.dump(fig_loss, f);
+
+        fig_acc = plt.figure(figsize = (10, 6));
+        #train acc
+        plt.plot(ep, train_acc, label = 'train acc');
+        #valid acc
+        plt.plot(np.arange(self.valid_start_epoch - 1, len(train_acc), self.valid_step) + 1, valid_acc, label = 'valid acc');
+        plt.xlabel('epoch');
+        plt.ylabel('Accuracy');
+        plt.legend(loc='upper right');
+        plt.savefig(save_dir + 'acc.png', dpi = 400); 
+        with open(save_dir + 'fig_acc.pkl', 'wb') as f:
+            pickle.dump(fig_acc, f);
+
         
 def generate_trainer(config):
+    if config['model']['name'].lower() in ['caution_encoder']:
+        return CautionTrainer(config);
     if config['train']['is_DA']:
         trainer = DATrainer(config);
     else:

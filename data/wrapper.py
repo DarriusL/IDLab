@@ -72,6 +72,7 @@ def v1_wrapper(config:dict, mode):
     #[N]
     data_dict['ids'] = torch.tensor(data['data']['id'][:, 0], dtype = torch.int64);
     data_dict['envs'] = torch.tensor(data['data']['env'][:, 0], dtype = torch.int64);
+    data.close();
     del data;
 
     loader_param = config['data'][mode]['loader'];
@@ -88,7 +89,8 @@ def v1_wrapper(config:dict, mode):
 
 @decorator.Timer
 def v3_warapper(config:dict, mode):
-    #TODO:if train, returns all; if valid, ...
+    if mode.lower() == 'valid':
+        return v1_wrapper(config, mode);
     data = h5py.File(config['data'][mode]['dir'], 'r');
     data_dict = {};
     data_dict['mode'] = 'v3';
@@ -100,7 +102,8 @@ def v3_warapper(config:dict, mode):
         p_id_data['ids'] = torch.tensor(data['data'][f'id{p_id}']['id'][:, 0], dtype = torch.int64);
         p_id_data['envs'] = torch.tensor(data['data'][f'id{p_id}']['env'][:, 0], dtype = torch.int64);
         data_dict['data'].append(p_id_data);
-    del data
+    data.close();
+    del data;
 
     loader_param = config['data'][mode]['loader'];
     assert (loader_param['batch_size'] == 1);
