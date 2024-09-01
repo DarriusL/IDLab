@@ -214,7 +214,8 @@ class CautionTrainer(Trainer):
 
 
     def train(self):
-        ACC_NAME = 'Intrusion' if self.model.is_Intrusion_Detection  else 'Identification';
+        if self.model.is_Intrusion_Detection: return;
+        ACC_NAME = 'Identification';
         save_dir = self.config['save_dir'];
         train_loss, valid_loss = [], [];
         train_acc, valid_acc = [], [];
