@@ -89,7 +89,7 @@ def v1_wrapper(config:dict, mode):
 
 @decorator.Timer
 def v3_warapper(config:dict, mode):
-    if mode.lower() == 'valid':
+    if mode.lower() in ['valid', 'test']:
         return v1_wrapper(config, mode);
     data = h5py.File(config['data'][mode]['dir'], 'r');
     data_dict = {};

@@ -41,14 +41,13 @@
     },
     "train":{
         "is_DA":false,
-        "max_epoch":300,
-        "valid_start_epoch":20,
-        "valid_step":5,
-        "stop_train_step_valid_not_improve":6,
+        "max_epoch":50,
+        "update_start_epoch":5,
+        "update_step":10,
         "valid_metrics":"loss",
         "valid_metrics_less":true,
         "optimizer":{
-            "lr":1e-5,
+            "lr":1e-4,
             "weight_decay":1e-4
         }
     },
@@ -65,11 +64,10 @@
         },
         "FeatureLayer":{
             "hid_layers":[
-                2048,
                 512
             ],
             "activation_fn":"tanh",
-            "drop_out":0.5,
+            "drop_out":0.2,
             "end_with_softmax":false
         }
     }

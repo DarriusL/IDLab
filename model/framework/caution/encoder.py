@@ -55,7 +55,6 @@ class Encoder(Net):
             #[B, 6000, 3, 56] -> [B, do] -> [do]
             self.pcenters[p_id, :] = self.encoder(amps.squeeze(0)).mean(dim = 0); 
             p_id += 1;
-        self.train();
     
     def p_classify(self, amps):
         #[B, do]
@@ -69,5 +68,8 @@ class Encoder(Net):
     def cal_loss(self, amps, ids, envs, is_target_data = False):
         probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(probs, ids);
+
+    def after_train_hook(self, trainer):
+        self.update_center(trainer.support_loader);
 
     

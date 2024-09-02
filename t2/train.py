@@ -14,7 +14,6 @@ class Trainer():
         util.set_attr(self, config['train']);
         self.train_loader, _ = data_wrapper(deepcopy(config), 'train');
         self.valid_loader, info = data_wrapper(deepcopy(config), 'valid');
-        print(info)
 
         #[N, T, R, F]
         config['model']['dim_in'] = info;
@@ -192,11 +191,13 @@ class CautionTrainer(Trainer):
         self.support_loader = self.train_loader;
         self.query_loader = self.valid_loader;
     
-    def _train_step(self):
+    def _train_step(self, epoch):
         epoch_train_loss, epoch_train_acc = [], [];
+        if ((epoch + 1) >= self.update_start_epoch and (epoch + 1) % self.update_step == 0) or epoch  == 0:
+            self.model.update_center(self.support_loader);
+            logger.info('Caution: update!');
         self.model.train();
         for amps, ids, envs in iter(self.query_loader):
-            self.model.update_center(self.support_loader);
             if hasattr(torch.cuda, 'empty_cache'):
                 torch.cuda.empty_cache();
             self.optimizer.zero_grad();
@@ -217,10 +218,10 @@ class CautionTrainer(Trainer):
         if self.model.is_Intrusion_Detection: return;
         ACC_NAME = 'Identification';
         save_dir = self.config['save_dir'];
-        train_loss, valid_loss = [], [];
-        train_acc, valid_acc = [], [];
+        train_loss, train_acc= [], [];
+        acc_best = .0;
         for epoch in range(self.max_epoch):
-            epoch_train_loss, accuracy = self._train_step();
+            epoch_train_loss, accuracy = self._train_step(epoch);
             train_loss.append(epoch_train_loss);
             train_acc.append(accuracy);
             acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {train_acc[-1] * 100 :.6f} %';
@@ -229,7 +230,9 @@ class CautionTrainer(Trainer):
                         f'train loss:{train_loss[-1]:.8f}\n'+
                         acc_info);
             self.warmupScheduler.step();
-
+            if train_acc[-1] >= acc_best:
+                acc_best = train_acc[-1];
+                torch.save({'model':self.model, 'epoch':epoch}, save_dir + 'model.pt');
         torch.save({'model':self.model, 'epoch':epoch}, save_dir + 'model_end.pt');
         json_util.jsonsave(self.config, save_dir + 'config.json');
         self.model.after_train_hook(self);
@@ -240,8 +243,7 @@ class CautionTrainer(Trainer):
         ep = np.arange(0, len(train_loss)) + 1;
         #train loss
         plt.plot(ep, train_loss, label = 'train loss');
-        #valid loss
-        plt.plot(np.arange(self.valid_start_epoch - 1, len(train_loss), self.valid_step) + 1, valid_loss, label = 'valid loss');
+
         plt.xlabel('epoch');
         plt.ylabel('loss');
         plt.yscale('log');
@@ -255,8 +257,7 @@ class CautionTrainer(Trainer):
         fig_acc = plt.figure(figsize = (10, 6));
         #train acc
         plt.plot(ep, train_acc, label = 'train acc');
-        #valid acc
-        plt.plot(np.arange(self.valid_start_epoch - 1, len(train_acc), self.valid_step) + 1, valid_acc, label = 'valid acc');
+
         plt.xlabel('epoch');
         plt.ylabel('Accuracy');
         plt.legend(loc='upper right');

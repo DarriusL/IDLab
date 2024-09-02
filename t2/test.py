@@ -11,15 +11,16 @@ class Tester():
     def __init__(self, config) -> None:
         save_dir = config['save_dir'];
         self.config = config
-        self.best_model = torch.load(save_dir + 'model.pt')['model'];
-        self.best_model.threshold_percents = config['model']['threshold_percents'];
-        self.end_model = torch.load(save_dir + 'model_end.pt')['model'];
-        self.end_model.threshold_percents = config['model']['threshold_percents'];
+        self.best_model = torch.load(save_dir + 'model.pt', weights_only=False)['model'];
+        self.end_model = torch.load(save_dir + 'model_end.pt', weights_only=False)['model'];
+        
 
         self.test_loader, _ = data_wrapper(deepcopy(self.config), 'test');
 
         if self.best_model.name.lower() in ['csinet_dec']:
             self.test_func = self._ae_test;
+            self.best_model.threshold_percents = config['model']['threshold_percents'];
+            self.end_model.threshold_percents = config['model']['threshold_percents'];
         else:
             self.test_func = self._general_test;
     

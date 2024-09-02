@@ -7,6 +7,7 @@ from model.framework.decoder.csinet_dec import CSINetDec
 from model.framework.caution.encoder import Encoder
 
 device = glb_var.get_value('device');
+logger = glb_var.get_value('logger');
 
 __all__ = ['generate_model']
 
@@ -24,4 +25,6 @@ def generate_model(model_cfg):
     else:
         raise NotImplementedError
 
+    num_params = sum(p.numel() for p in model.parameters())
+    logger.info(f'The number of parameters of the [{model.name}]: {num_params / 10 ** 6:.6f} M');
     return model.to(device);
