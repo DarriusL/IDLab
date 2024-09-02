@@ -6,29 +6,18 @@
     "data":{
         "dataset":"v3",
         "train":{
-            "dir":"data/v3/support.mat",
-            "loader":{
-                "num_workers":4, 
-                "pin_memory":true,
-                "batch_size":1,
-                "drop_last":false,
-                "shuffle":false,
-                "prefetch_factor":4
-            }
-        },
-        "valid":{
-            "dir":"data/v3/query.mat",
+            "dir":"data/v3/valid.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
                 "batch_size":8,
                 "drop_last":false,
-                "shuffle":true,
+                "shuffle":false,
                 "prefetch_factor":4
             }
         },
         "test":{
-            "dir":"data/v3/test_legal.mat",
+            "dir":"data/v3/test.mat",
             "loader":{
                 "num_workers":4,
                 "pin_memory":true,
@@ -52,23 +41,11 @@
         }
     },
     "model":{
-        "name":"caution_encoder",
-        "do":256,
-        "cnn":{
-            "hid_layer":[
-                32,
-                128,
-                128
-            ],
-            "activation_fn":"leaky_relu"
-        },
-        "FeatureLayer":{
-            "hid_layers":[
-                512
-            ],
-            "activation_fn":"tanh",
-            "drop_out":0.2,
-            "end_with_softmax":false
-        }
+        "name":"caution",
+        "pretrained_enc_dir":"cache/save/v3/caution_encoder_opt1/model_end.pt",
+        "initial_threshold":0.5,
+        "num_iterations":10, 
+        "num_thresholds":20,
+        "threshold_step":0.1
     }
 }

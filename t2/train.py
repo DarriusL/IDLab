@@ -185,7 +185,7 @@ class DATrainer(Trainer):
             epoch_train_acc.append(self.model.cal_accuracy(amps_t, ids_t, envs_t))
         return np.mean(epoch_train_loss), np.mean(epoch_train_acc);
 
-class CautionTrainer(Trainer):
+class CautionEncTrainer(Trainer):
     def __init__(self, config) -> None:
         super().__init__(config);
         self.support_loader = self.train_loader;
@@ -215,7 +215,7 @@ class CautionTrainer(Trainer):
 
 
     def train(self):
-        if self.model.is_Intrusion_Detection: return;
+        if self.model.is_Intrusion_Detection: raise RuntimeError;
         ACC_NAME = 'Identification';
         save_dir = self.config['save_dir'];
         train_loss, train_acc= [], [];
@@ -265,10 +265,17 @@ class CautionTrainer(Trainer):
         with open(save_dir + 'fig_acc.pkl', 'wb') as f:
             pickle.dump(fig_acc, f);
 
+class CautionTrainer():
+    def __init__(self, config) -> None:
+        util.set_attr(self, config['train']);
+        self.train_loader, _ = data_wrapper(deepcopy(config), 'train');
+
         
 def generate_trainer(config):
-    if config['model']['name'].lower() in ['caution_encoder']:
-        return CautionTrainer(config);
+    if config['model']['name'].lower() == 'caution_encoder':
+        return CautionEncTrainer(config);
+    elif config['model']['name'].lower() == 'caution':
+        raise RuntimeError
     if config['train']['is_DA']:
         trainer = DATrainer(config);
     else:
