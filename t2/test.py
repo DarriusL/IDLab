@@ -1,4 +1,4 @@
-import torch
+import torch, os
 import numpy as np
 from prettytable import PrettyTable
 from copy import deepcopy
@@ -45,20 +45,21 @@ class Tester():
         result['best model']['acc'] = self._calculate(self.best_model, 'best model');
         json_util.jsonsave(result, save_dir + 'result.json');
 
-        from matplotlib import pyplot as plt
-        import pickle
-        with open(save_dir + 'ep.pkl', 'rb') as f:
-            ep = pickle.load(f)
+        if os.path.exists(save_dir + 'ep.pkl'):
+            from matplotlib import pyplot as plt
+            import pickle
+            with open(save_dir + 'ep.pkl', 'rb') as f:
+                ep = pickle.load(f)
 
-        with open(save_dir + 'fig_acc.pkl', 'rb') as f:
-            fig_acc = pickle.load(f);
-        plt.figure(fig_acc);
-        plt.plot(ep, result['end model']['acc'] * np.ones_like(ep), label = f'test acc - end model');
-        plt.plot(ep, result['best model']['acc'] * np.ones_like(ep), label = f'test acc - best model');
-        plt.xlabel('epoch');
-        plt.ylabel('loss');
-        plt.legend(loc='upper right')
-        plt.savefig(save_dir + 'test_acc.png', dpi = 400);
+            with open(save_dir + 'fig_acc.pkl', 'rb') as f:
+                fig_acc = pickle.load(f);
+            plt.figure(fig_acc);
+            plt.plot(ep, result['end model']['acc'] * np.ones_like(ep), label = f'test acc - end model');
+            plt.plot(ep, result['best model']['acc'] * np.ones_like(ep), label = f'test acc - best model');
+            plt.xlabel('epoch');
+            plt.ylabel('loss');
+            plt.legend(loc='upper right')
+            plt.savefig(save_dir + 'test_acc.png', dpi = 400);
 
         logger.info(f'Saving dir:{save_dir}');
     

@@ -5,7 +5,7 @@
     "known_env_num":2,
     "data":{
         "dataset":"v3",
-        "train":{
+        "valid":{
             "dir":"data/v3/valid.mat",
             "loader":{
                 "num_workers":4, 
@@ -44,8 +44,8 @@
         "name":"caution",
         "pretrained_enc_dir":"cache/save/v3/caution_encoder_opt1/model_end.pt",
         "initial_threshold":0.5,
-        "num_iterations":10, 
+        "num_iterations":50, 
         "num_thresholds":20,
-        "threshold_step":0.1
+        "threshold_step":0.05
     }
 }

@@ -268,14 +268,27 @@ class CautionEncTrainer(Trainer):
 class CautionTrainer():
     def __init__(self, config) -> None:
         util.set_attr(self, config['train']);
-        self.train_loader, _ = data_wrapper(deepcopy(config), 'train');
+        
+        config['model']['known_p_num'] = config['known_p_num'];
+        config['model']['known_env_num'] = config['known_env_num'];
+        self.config = config;
+
+        model = generate_model(deepcopy(config['model']));
+        self.model = model;
+        self.valid_loader, _ = data_wrapper(deepcopy(config), 'valid');
+
+    def train(self):
+        self.model.threshold_update(self.valid_loader);
+        save_dir = self.config['save_dir'];
+        torch.save({'model':self.model}, save_dir + 'model.pt');
+        torch.save({'model':self.model}, save_dir + 'model_end.pt');
 
         
 def generate_trainer(config):
     if config['model']['name'].lower() == 'caution_encoder':
         return CautionEncTrainer(config);
     elif config['model']['name'].lower() == 'caution':
-        raise RuntimeError
+        return CautionTrainer(config);
     if config['train']['is_DA']:
         trainer = DATrainer(config);
     else:
