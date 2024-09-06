@@ -113,7 +113,7 @@ class Trainer():
                 acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {valid_acc[-1] * 100 : .6f} % / {np.max(valid_acc) * 100: .6f} % (best)';
                 logger.info(f'[{self.model.name}]-['+ colortext.PURPLE +'valid' + colortext.RESET +f']-[metrics: {self.valid_metrics.lower()}]\n'
                     f'[epoch: {epoch + 1}/{self.max_epoch}] \n'
-                    f'valid loss:{valid_loss[-1]:.8f} / {np.min(valid_loss):.8f} (best)' +
+                    f'valid loss:{valid_loss[-1]:.8f} / {np.min(valid_loss):.8f} (best)\n' +
                     acc_info + '\n' +
                     colortext.GREEN + f'valid_not_imporove_cnt: {valid_cnt}' + colortext.RESET);
                 if valid_cnt >= self.stop_train_step_valid_not_improve:

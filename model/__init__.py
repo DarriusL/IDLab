@@ -6,6 +6,7 @@ from model.framework.encoder.csinet_trans import CSINetTrans
 from model.framework.decoder.csinet_dec import CSINetDec
 from model.framework.caution.encoder import Encoder
 from model.framework.caution.caution import Caution
+from model.framework.gait_enhance import GaitEnhance
 
 device = glb_var.get_value('device');
 logger = glb_var.get_value('logger');
@@ -25,6 +26,8 @@ def generate_model(model_cfg):
         model = Encoder(model_cfg);
     elif model_cfg['name'].lower() == 'caution':
         model = Caution(model_cfg);
+    elif model_cfg['name'].lower() == 'gait_enhance':
+        model = GaitEnhance(model_cfg);
     else:
         raise NotImplementedError
 
