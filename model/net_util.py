@@ -24,10 +24,7 @@ def get_mlp_net(hid_layers, activation_fn, drop_out, dim_in, dim_out, end_with_s
     else:
         #len()==0
         layers = [
-            torch.nn.Linear(dim_in, dim_out),
-            torch.nn.Dropout(drop_out),
-            activation_fn,
-            torch.nn.Linear(dim_out, dim_out)
+            torch.nn.Linear(dim_in, dim_out)
         ]
     
     if end_with_softmax:
