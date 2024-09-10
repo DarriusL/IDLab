@@ -7,12 +7,14 @@ from model.framework.decoder.csinet_dec import CSINetDec
 from model.framework.caution.encoder import Encoder
 from model.framework.caution.caution import Caution
 from model.framework.gait_enhance import GaitEnhance
+from model.framework.deep_wiid import DeepWiID
 
 device = glb_var.get_value('device');
 logger = glb_var.get_value('logger');
 
 __all__ = ['generate_model']
 
+#TODO:simplify
 def generate_model(model_cfg):
     if model_cfg['name'].lower() == 'double_trans':
         model = DoubleTrans(model_cfg);
@@ -28,6 +30,8 @@ def generate_model(model_cfg):
         model = Caution(model_cfg);
     elif model_cfg['name'].lower() == 'gait_enhance':
         model = GaitEnhance(model_cfg);
+    elif model_cfg['name'].lower() == 'deep_wiid':
+        model = DeepWiID(model_cfg);
     else:
         raise NotImplementedError
 

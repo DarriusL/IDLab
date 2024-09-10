@@ -12,7 +12,7 @@ if __name__ == '__main__':
     is_train, is_test = False, False;
     if args.config is not None:
         config = json_util.jsonload(args.config);
-        is_train =  True;
+        is_train = True;
         is_test = True;
     elif args.saved_config is not None:
         config = json_util.jsonload(args.saved_config);
