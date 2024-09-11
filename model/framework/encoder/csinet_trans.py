@@ -62,8 +62,6 @@ class CSINet(torch.nn.Module):
         #output:[N, 1, t, d] -> [N, t, d]
         return self.net(input.permute(0, 2, 1, 3)).squeeze(1);
 
-
-
 class CSINetTrans(Net):
     def __init__(self, model_cfg):
         super().__init__(model_cfg);
