@@ -10,6 +10,7 @@ from model.framework.gait_enhance import GaitEnhance
 from model.framework.deep_wiid import DeepWiID
 from model.framework.maiu import MAIU
 from model.framework.csiid import CSIID
+from model.framework.gateid import GateID
 
 device = glb_var.get_value('device');
 logger = glb_var.get_value('logger');
@@ -38,6 +39,8 @@ def generate_model(model_cfg):
         model = MAIU(model_cfg);
     elif model_cfg['name'].lower() == 'csiid':
         model = CSIID(model_cfg);
+    elif model_cfg['name'].lower() == 'gait_id':
+        model = GateID(model_cfg);
     else:
         raise NotImplementedError
 
