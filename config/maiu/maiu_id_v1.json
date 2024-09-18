@@ -53,9 +53,6 @@
         }
     },
     "model":{
-        "name":"maiu",
-        "p":0.3,
-        "d":10,
-        "lambda_reg":0.01
+        "name":"maiu_id"
     }
 }

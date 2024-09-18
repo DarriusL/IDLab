@@ -44,7 +44,7 @@ class Net(torch.nn.Module):
     def after_train_hook(self, trainer):
         pass;
 
-    def cal_loss(self):
+    def cal_loss(self, amps, ids, envs, is_target_data = False):
         '''Calculate the loss'''
         logger.error('Method needs to be called after being implemented');
         raise NotImplementedError;

@@ -79,3 +79,58 @@ class MAIU(Net):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
+
+class MAIUId(Net):
+    def __init__(self, model_cfg):
+        super().__init__(model_cfg);
+        self.cnn_unit = ConvBlock(3, 64, kernel_size=7, stride=2, padding=3)
+
+        self.resnet_layers = torch.nn.Sequential(
+            ResNetUnit(64, 32, stride=1),
+            ResNetUnit(128, 32, stride=1),
+            ResNetUnit(128, 64, stride=2),
+            ResNetUnit(256, 128, stride=2),
+            ResNetUnit(512, 256, stride=2)
+        )
+
+        self.global_avg_pool = torch.nn.AdaptiveAvgPool2d((1, 1))
+        self.fc_identity = torch.nn.Linear(1024, self.known_p_num)
+        self.fc_illegal = torch.nn.Linear(1024, 2)
+
+        self.is_Intrusion_Detection = True;
+
+    def intrusion_detection(self, amps):
+        '''
+        Rrturns:
+        --------
+        Is it an intruder.
+        '''
+        x = amps.permute(0, 2, 1, 3)
+        x = self.cnn_unit(x)
+        x = self.resnet_layers(x)
+        x = self.global_avg_pool(x)
+        x = x.view(x.size(0), -1)
+        return self.fc_illegal(x).argmax(dim = -1) == 1;
+
+    def cal_loss(self, amps, ids, envs, is_target_data = False):
+        x = amps.permute(0, 2, 1, 3)
+        x = self.cnn_unit(x)
+        x = self.resnet_layers(x)
+        x = self.global_avg_pool(x)
+        x = x.view(x.size(0), -1)
+        identity_out = self.fc_identity(x)
+        illegal_out = self.fc_illegal(x)
+        #loss1
+        loss1 = self.cross_entropy(identity_out, ids)
+        l2_reg = sum(p.pow(2.0).sum() for p in self.parameters())
+        loss1 += self.lambda_reg * l2_reg
+
+        #loss2
+        illegal_target = (ids > self.illegal_target).int();
+        illegal_probs = torch.nn.functional.softmax(illegal_out, dim=1).argmax(dim=1)  # 预测标签
+        indicator = ((illegal_probs == 0) & (illegal_target == 0)).float()  # 0表示合法用户
+
+        max_term = torch.clamp(indicator - illegal_probs + illegal_probs / (self.p * self.d), 0)
+        loss2 = torch.mean(max_term)
+        return loss1 + loss2
+

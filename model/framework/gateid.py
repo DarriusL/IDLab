@@ -5,6 +5,9 @@ from sklearn.metrics import pairwise_distances
 import scipy.stats
 import numpy as np
 from model.framework.base import Net
+from lib import glb_var
+
+device = glb_var.get_value('device');
 
 # 特征投影层
 class FeatureProjectionLayer(nn.Module):
@@ -50,9 +53,6 @@ class FeatureFusionLayer(nn.Module):
 
         projected_features = self.feature_projection(ext_features)
 
-        # 确保它们在同一设备上
-        device = projected_features.device  # 获取 projected_features 的设备
-
         # 将 importance_scores 移动到同一设备
         importance_scores = importance_scores.to(device)
 
@@ -70,8 +70,8 @@ class FeatureFusionLayer(nn.Module):
     def _ext_features(self, amps):
         B, R, T, F = amps.shape
 
-        if self.window_size > T:
-            raise ValueError(f"Window size {self.window_size} must be less than or equal to T {T}")
+        # if self.window_size > T:
+        #     raise ValueError(f"Window size {self.window_size} must be less than or equal to T {T}")
 
         amps_window = amps.unfold(2, self.window_size, self.window_size)
 
@@ -83,8 +83,8 @@ class FeatureFusionLayer(nn.Module):
         amps_window_np = amps_window.cpu().numpy()
         amps_window_np_normalized = (amps_window_np - np.mean(amps_window_np, axis=-1, keepdims=True)) / np.std(
             amps_window_np, axis=-1, keepdims=True)
-        amps_skew = torch.tensor(scipy.stats.skew(amps_window_np_normalized, axis=-1), device=amps.device)
-        amps_kurtosis = torch.tensor(scipy.stats.kurtosis(amps_window_np_normalized, axis=-1), device=amps.device)
+        amps_skew = torch.tensor(scipy.stats.skew(amps_window_np_normalized, axis=-1), device=device)
+        amps_kurtosis = torch.tensor(scipy.stats.kurtosis(amps_window_np_normalized, axis=-1), device=device)
 
         median_vals = torch.median(amps_window, dim=-1)[0]
         median_deviation_vals = torch.median(torch.abs(amps_window - median_vals.unsqueeze(-1)), dim=-1)[0]
@@ -97,51 +97,56 @@ class FeatureFusionLayer(nn.Module):
 
         return features
 
-# ReliefF算法实现
     def reliefF(self, X, y, num_neighbors=10):
         # 确保 X 是一个 PyTorch 张量
-        if isinstance(X, np.ndarray):
-            X = torch.tensor(X, device='cuda' if torch.cuda.is_available() else 'cpu')
+        # if isinstance(X, np.ndarray):
+        #     X = torch.tensor(X, device='cuda' if torch.cuda.is_available() else 'cpu')
 
         batch_size, channels, time_steps, feature_dim, num_features = X.shape
 
         # 计算每个特征的重要性
-        importance_scores = np.zeros((1, num_features))
+        importance_scores = torch.zeros((1, num_features), device=device)
 
         for b in range(batch_size):
             for c in range(channels):
                 for t in range(time_steps):
                     # 获取当前时间步的所有特征
-                    X_np = X[b, c, t].cpu().numpy()  # 这里 X_np 的形状为 (56, 7)
+                    X_tensor = X[b, c, t]  # 这里 X_tensor 的形状为 (feature_dim, num_features)
 
                     # 计算样本之间的距离
-                    distances = pairwise_distances(X_np)  # 计算所有样本之间的距离
+                    distances = self.compute_pairwise_distances(X_tensor)  # 使用自定义函数计算距离
 
                     # 对每个样本计算近邻
                     for f in range(feature_dim):
-                        sample = X[b, c, t, f].cpu().numpy()  # 将样本移到 CPU 并转换为 NumPy 数组
+                        sample = X_tensor[f]  # 当前样本
 
                         # 获取当前样本的距离
                         sample_distances = distances[f]
 
                         # 获取最近的同类样本（近邻命中）
-                        near_hit_indices = np.argsort(sample_distances)[:num_neighbors]
-                        near_hits = X_np[near_hit_indices]
+                        near_hit_indices = torch.argsort(sample_distances)[:num_neighbors]
+                        near_hits = X_tensor[near_hit_indices]
 
                         # 计算同类样本的差异
-                        importance_scores[0, :] -= np.abs(near_hits - sample).sum(axis=0)
+                        importance_scores[0, :] -= torch.abs(near_hits - sample).sum(dim=0)
 
                         # 获取最近的异类样本（近邻未命中）
-                        near_miss_indices = np.argsort(sample_distances)[num_neighbors:num_neighbors * 2]
-                        near_misses = X_np[near_miss_indices]
+                        near_miss_indices = torch.argsort(sample_distances)[num_neighbors:num_neighbors * 2]
+                        near_misses = X_tensor[near_miss_indices]
 
                         # 计算异类样本的差异
-                        importance_scores[0, :] += np.abs(near_misses - sample).sum(axis=0)
+                        importance_scores[0, :] += torch.abs(near_misses - sample).sum(dim=0)
 
         # 归一化重要性分数
         importance_scores /= (num_neighbors * feature_dim * time_steps * channels)
 
-        return torch.from_numpy(importance_scores)  # 输出形状为 (1, 7)
+        return importance_scores  # 输出形状为 (1, num_features)
+
+    def compute_pairwise_distances(self, X_tensor):
+        # 计算每一对样本之间的欧几里得距离
+        X_norm = (X_tensor ** 2).sum(dim=1, keepdim=True)  # 每个样本的平方和
+        distances = X_norm + X_norm.T - 2 * torch.mm(X_tensor, X_tensor.T)  # 计算距离
+        return distances
 
 # ResNet块
 class ResNetBlock(nn.Module):
@@ -183,9 +188,8 @@ class GateID(Net):
         self.fc = nn.Linear(64 * 2, self.known_p_num)  # 双向LSTM输出维度为64*2
 
     def p_classify(self, x, y):
-        #【B， 3, 6000, 56】
-        # 特征融合
         x = x.permute(0, 2, 1, 3);
+        # 特征融合
         x = self.feature_fusion(x, y)
 
         # 调整形状以适应 ResNet
@@ -217,7 +221,7 @@ class GateID(Net):
         #ids:[N]
         #envs:[N]
 
-        #p
+            #p
         id_pred = self.p_classify(amps, ids).argmax(dim = -1);
         acc = (id_pred == ids).cpu().float().mean().item();
         return acc;

@@ -8,7 +8,7 @@ from model.framework.caution.encoder import Encoder
 from model.framework.caution.caution import Caution
 from model.framework.gait_enhance import GaitEnhance
 from model.framework.deep_wiid import DeepWiID
-from model.framework.maiu import MAIU
+from model.framework.maiu import MAIUId, MAIU
 from model.framework.csiid import CSIID
 from model.framework.gateid import GateID
 
@@ -35,6 +35,8 @@ def generate_model(model_cfg):
         model = GaitEnhance(model_cfg);
     elif model_cfg['name'].lower() == 'deep_wiid':
         model = DeepWiID(model_cfg);
+    elif model_cfg['name'].lower() == 'maiu_id':
+        model = MAIUId(model_cfg);
     elif model_cfg['name'].lower() == 'maiu':
         model = MAIU(model_cfg);
     elif model_cfg['name'].lower() == 'csiid':
