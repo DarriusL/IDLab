@@ -120,7 +120,7 @@ def v3_warapper(config:dict, mode):
 
 
 def data_wrapper(config:dict, mode):
-    if config['data']['dataset'] in ['v1', 'v2']:
+    if config['data']['dataset'] in ['v1', 'v2', 'v4']:
         rets = v1_wrapper(config, mode);
     elif config['data']['dataset'] in ['v3']:
         rets = v3_warapper(config, mode);

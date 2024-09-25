@@ -115,6 +115,12 @@ class WiAiId(Net):
             torch.nn.Softmax(dim = -1)
         ]);
 
+        # p net
+        self.p_net = torch.nn.Sequential(
+            torch.nn.Linear(self.known_p_num, self.do),
+            torch.nn.Dropout()
+        );
+
         # env_classifier
         layers = [self.do] + model_cfg['env_classifier']['hid_layers'] + [self.known_env_num];
         self.env_classifier = torch.nn.Sequential(*[
@@ -126,12 +132,6 @@ class WiAiId(Net):
         ] + [
             torch.nn.Softmax(dim = -1)
         ]);
-
-        # p net
-        self.p_net = torch.nn.Sequential(
-            torch.nn.Linear(self.known_p_num, self.do),
-            torch.nn.Dropout()
-        );
 
         self.is_Intrusion_Detection = False;
 
@@ -161,7 +161,9 @@ class WiAiId(Net):
         loss_id = torch.nn.CrossEntropyLoss()(id_s_probs, ids);
 
         #env
-        
-        loss_env
+        refeture_s = self.p_net(id_s_probs);
+        env_s_probs = self.env_classifier(refeture_s + feature_s);
+        loss_env = torch.nn.CrossEntropyLoss()(env_s_probs, envs);
+        return loss_id - self.alpha * loss_env + self.beta * loss_mmd + self.gamma * loss_coral;
 
     

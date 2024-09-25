@@ -55,6 +55,9 @@
     "model":{
         "name":"wiai_id",
         "do":256,
+        "alpha":1,
+        "beta":1,
+        "gamma":1,
         "MHA_cfg":{
             "d_q":64,
             "d_k":64,
