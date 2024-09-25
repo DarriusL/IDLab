@@ -101,8 +101,8 @@ class PositionEncoding(torch.nn.Module):
         self.register_buffer('pe', pe.unsqueeze(0));
 
     def forward(self, x):
-
-        return x + self.pe[:, 0:x.shape[1], :];
+        #(batchsize, seq_len, d)
+        return self.pe[:, 0:x.shape[1], :];
 
 class LearnablePositionEncoding(torch.nn.Module):
     def __init__(self, d, max_len = 10000) -> None:
@@ -111,6 +111,7 @@ class LearnablePositionEncoding(torch.nn.Module):
         self.register_buffer('Pos_idx', torch.arange(max_len));
 
     def forward(self, x):
+        #(batchsize, seq_len, d)
         return self.Embed(self.Pos_idx[:x.shape[1]].unsqueeze(0).repeat(x.shape[0], 1));
 
 class PositionwiseFeedForwardNet(torch.nn.Module):

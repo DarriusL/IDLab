@@ -161,8 +161,12 @@ class DATrainer(Trainer):
         if 'augmentation' in config['data']['train'].keys():
             cfg_t['data']['target']['augmentation'] = cfg_t['data']['train']['augmentation'];
         self.target_loader, _ = data_wrapper(cfg_t, 'target');
-
+        self._train_step_func = self._train_step_unl if self.model.name.lower() in ['wiai_id'] else self._train_step_l;
+    
     def _train_step(self):
+        return self._train_step_func();
+
+    def _train_step_l(self):
         epoch_train_loss, epoch_train_acc = [], [];
         self.model.train();
         for amps, ids, envs in iter(self.train_loader):
@@ -173,6 +177,28 @@ class DATrainer(Trainer):
             amps_t, ids_t, envs_t = iter(self.target_loader).__next__();
             target_loss = self.model.cal_loss(amps_t, ids_t, envs_t, is_target_data = True); 
             loss = train_loss + target_loss;
+            self._check_nan(loss);
+            loss.backward();
+            torch.nn.utils.clip_grad_norm_(
+                parameters = self.model.parameters(),
+                max_norm = 1
+            );
+            self.optimizer.step();
+            epoch_train_loss.append(loss.cpu().item());
+            epoch_train_acc.append(self.model.cal_accuracy(amps, ids, envs));
+            epoch_train_acc.append(self.model.cal_accuracy(amps_t, ids_t, envs_t))
+        return np.mean(epoch_train_loss), np.mean(epoch_train_acc);
+
+    def _train_step_unl(self):
+        epoch_train_loss, epoch_train_acc = [], [];
+        self.model.train();
+        for amps, ids, envs in iter(self.train_loader):
+            if hasattr(torch.cuda, 'empty_cache'):
+                torch.cuda.empty_cache();
+            self.optimizer.zero_grad();
+            amps_t, ids_t, envs_t = iter(self.target_loader).__next__();
+
+            loss = self.model.cal_loss(amps, ids, envs, amps_t);
             self._check_nan(loss);
             loss.backward();
             torch.nn.utils.clip_grad_norm_(

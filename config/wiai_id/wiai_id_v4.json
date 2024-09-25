@@ -56,10 +56,33 @@
         "name":"wiai_id",
         "do":256,
         "MHA_cfg":{
-
+            "d_q":64,
+            "d_k":64,
+            "d_v":64,
+            "n_heads":3
         },
         "MultiScaleCNN_cfg":{
-            
+            "h_layers":[
+                84
+            ],
+            "hid_layers":[
+                64,
+                32,
+                8,
+                1
+            ]
+        },
+        "p_classifier":{
+            "hid_layers":[
+                128,
+                32
+            ]
+        },
+        "env_classifier":{
+            "hid_layers":[
+                32
+            ]
         }
+
     }
 }

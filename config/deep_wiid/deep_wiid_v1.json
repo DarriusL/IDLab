@@ -56,12 +56,13 @@
         "name":"deep_wiid",
         "gru_cfg":{
             "hidden_size":256,
-            "num_layers":2, 
+            "num_layers":4, 
             "batch_first":true
         },
         "tail_net":{
             "hid_layers":[
-                128
+                128,
+                32
             ],
             "activation_fn":"tanh",
             "drop_out":0.5,
