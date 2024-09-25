@@ -98,49 +98,54 @@ class FeatureFusionLayer(nn.Module):
         return features
 
     def reliefF(self, X, y, num_neighbors=10):
-        # 确保 X 是一个 PyTorch 张量
-        # if isinstance(X, np.ndarray):
-        #     X = torch.tensor(X, device='cuda' if torch.cuda.is_available() else 'cpu')
-
+        """
+        ReliefF 算法，用于计算特征的重要性分数。
+        
+        参数:
+            X: 输入数据，形状为 (batch_size, channels, time_steps, feature_dim, num_features) 的张量。
+            y: 标签（未在此函数中使用，但可能需要在其他版本中考虑）。
+            num_neighbors: 每个样本的近邻数量。
+        
+        返回:
+            重要性分数，形状为 (1, num_features) 的张量。
+        """
         batch_size, channels, time_steps, feature_dim, num_features = X.shape
 
-        # 计算每个特征的重要性
-        importance_scores = torch.zeros((1, num_features), device=device)
+        # 初始化重要性分数
+        importance_scores = torch.zeros((1, num_features), device=X.device)
 
-        for b in range(batch_size):
-            for c in range(channels):
-                for t in range(time_steps):
-                    # 获取当前时间步的所有特征
-                    X_tensor = X[b, c, t]  # 这里 X_tensor 的形状为 (feature_dim, num_features)
+        # 将 (batch_size, channels, time_steps, feature_dim, num_features) 展平为 (total_samples, feature_dim, num_features)
+        total_samples = batch_size * channels * time_steps
+        X_flat = X.view(total_samples, feature_dim, num_features)  # 形状为 (total_samples, feature_dim, num_features)
 
-                    # 计算样本之间的距离
-                    distances = self.compute_pairwise_distances(X_tensor)  # 使用自定义函数计算距离
+        # 对每个时间步的样本计算距离矩阵，形状为 (total_samples, feature_dim, feature_dim)
+        distances = torch.zeros((total_samples, feature_dim, feature_dim), device=X.device)
+        for i in range(total_samples):
+            distances[i] = self.compute_pairwise_distances(X_flat[i])
 
-                    # 对每个样本计算近邻
-                    for f in range(feature_dim):
-                        sample = X_tensor[f]  # 当前样本
+        # 获取每个样本的最近的同类样本（近邻命中），形状为 (total_samples, feature_dim, num_neighbors)
+        near_hit_indices = torch.argsort(distances, dim=2)[:, :, :num_neighbors]
+        near_hits = torch.gather(X_flat.unsqueeze(2).expand(-1, -1, num_neighbors, -1), 1, near_hit_indices.unsqueeze(-1).expand(-1, -1, -1, num_features))
 
-                        # 获取当前样本的距离
-                        sample_distances = distances[f]
+        # 计算同类样本的差异，形状为 (total_samples, feature_dim, num_features)
+        hit_differences = torch.abs(near_hits - X_flat.unsqueeze(2)).sum(dim=2)
 
-                        # 获取最近的同类样本（近邻命中）
-                        near_hit_indices = torch.argsort(sample_distances)[:num_neighbors]
-                        near_hits = X_tensor[near_hit_indices]
+        # 获取每个样本的最近的异类样本（近邻未命中），形状为 (total_samples, feature_dim, num_neighbors)
+        near_miss_indices = torch.argsort(distances, dim=2)[:, :, num_neighbors:num_neighbors * 2]
+        near_misses = torch.gather(X_flat.unsqueeze(2).expand(-1, -1, num_neighbors, -1), 1, near_miss_indices.unsqueeze(-1).expand(-1, -1, -1, num_features))
 
-                        # 计算同类样本的差异
-                        importance_scores[0, :] -= torch.abs(near_hits - sample).sum(dim=0)
+        # 计算异类样本的差异，形状为 (total_samples, feature_dim, num_features)
+        miss_differences = torch.abs(near_misses - X_flat.unsqueeze(2)).sum(dim=2)
 
-                        # 获取最近的异类样本（近邻未命中）
-                        near_miss_indices = torch.argsort(sample_distances)[num_neighbors:num_neighbors * 2]
-                        near_misses = X_tensor[near_miss_indices]
-
-                        # 计算异类样本的差异
-                        importance_scores[0, :] += torch.abs(near_misses - sample).sum(dim=0)
+        # 更新重要性分数
+        importance_scores[0] -= hit_differences.sum(dim=1).sum(dim=0)
+        importance_scores[0] += miss_differences.sum(dim=1).sum(dim=0)
 
         # 归一化重要性分数
         importance_scores /= (num_neighbors * feature_dim * time_steps * channels)
 
         return importance_scores  # 输出形状为 (1, num_features)
+
 
     def compute_pairwise_distances(self, X_tensor):
         # 计算每一对样本之间的欧几里得距离

@@ -4,35 +4,35 @@
     "known_p_num":10,
     "known_env_num":2,
     "data":{
-        "dataset":"v1",
+        "dataset":"v4",
         "train":{
-            "dir":"data/v1/train.mat",
+            "dir":"data/v4/train.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":64,
+                "batch_size":8,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
             }
         },
         "valid":{
-            "dir":"data/v1/valid.mat",
+            "dir":"data/v4/valid.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":24,
+                "batch_size":8,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
             }
         },
         "test":{
-            "dir":"data/v1/test.mat",
+            "dir":"data/v4/test_legal.mat",
             "loader":{
-                "num_workers":4, 
+                "num_workers":4,
                 "pin_memory":true,
-                "batch_size":24,
+                "batch_size":8,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -41,7 +41,7 @@
     },
     "train":{
         "is_DA":false,
-        "max_epoch":100,
+        "max_epoch":300,
         "valid_start_epoch":20,
         "valid_step":5,
         "stop_train_step_valid_not_improve":6,
@@ -53,9 +53,13 @@
         }
     },
     "model":{
-        "name":"maiu",
-        "p":0.3,
-        "d":10,
-        "lambda_reg":0.01
+        "name":"wiai_id",
+        "do":256,
+        "MHA_cfg":{
+
+        },
+        "MultiScaleCNN_cfg":{
+            
+        }
     }
 }

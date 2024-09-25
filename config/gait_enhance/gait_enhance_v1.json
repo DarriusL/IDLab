@@ -28,7 +28,7 @@
             }
         },
         "test":{
-            "dir":"data/v1/test_legal.mat",
+            "dir":"data/v1/test.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,

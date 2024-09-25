@@ -50,7 +50,7 @@ class ResNetUnit(torch.nn.Module):
         return out
 
 
-class MAIU(Net):
+class MAIUId(Net):
     def __init__(self, model_cfg):
         super().__init__(model_cfg);
         self.cnn_unit = ConvBlock(3, 64, kernel_size=7, stride=2, padding=3)
@@ -80,7 +80,7 @@ class MAIU(Net):
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
 
-class MAIUId(Net):
+class MAIU(Net):
     def __init__(self, model_cfg):
         super().__init__(model_cfg);
         self.cnn_unit = ConvBlock(3, 64, kernel_size=7, stride=2, padding=3)
@@ -121,12 +121,12 @@ class MAIUId(Net):
         identity_out = self.fc_identity(x)
         illegal_out = self.fc_illegal(x)
         #loss1
-        loss1 = self.cross_entropy(identity_out, ids)
+        loss1 = torch.nn.CrossEntropyLoss()(identity_out, ids)
         l2_reg = sum(p.pow(2.0).sum() for p in self.parameters())
         loss1 += self.lambda_reg * l2_reg
 
         #loss2
-        illegal_target = (ids > self.illegal_target).int();
+        illegal_target = (ids > self.known_p_num).int();
         illegal_probs = torch.nn.functional.softmax(illegal_out, dim=1).argmax(dim=1)  # 预测标签
         indicator = ((illegal_probs == 0) & (illegal_target == 0)).float()  # 0表示合法用户
 

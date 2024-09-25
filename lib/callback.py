@@ -22,6 +22,7 @@ class CustomException(Exception):
     '''
     def __init__(self,ErrorInfo):
         self.ErrorInfo = '\033[0;31m' + str(ErrorInfo) + '\033[0m';
+    
     def __str__(self):
         return self.ErrorInfo
 

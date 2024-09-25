@@ -82,9 +82,6 @@ def get_func_rets(func:Callable, params:dict):
         logger.error(f'Extracted value of parameter: {ext_params.values()}');
         raise RuntimeError
 
-
-
-
 def set_seed(seed):
     '''Set random seed
     '''
