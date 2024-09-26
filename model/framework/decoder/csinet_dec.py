@@ -136,7 +136,6 @@ class CSINetDec(Net):
     def set_threshold(self, percent):
         self.threshold = self.thresholds[percent];
 
-
     def intrusion_detection(self, amps):
         '''
         Rrturns:

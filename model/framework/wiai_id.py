@@ -1,5 +1,6 @@
 import torch
 from lib import util
+import numpy as np
 from model import net_util, attnet
 from model.framework.base import Net
 
@@ -88,7 +89,7 @@ class MultiScaleCNN(Net):
 class WiAiId(Net):
     def __init__(self, model_cfg) -> None:
         super().__init__(model_cfg);
-        d = torch.prod(self.dim_in[2:]);
+        d = np.prod(self.dim_in[2:]);
         #Position encoding
         self.pos_enc = attnet.LearnablePositionEncoding(d = d, max_len = self.dim_in[1]);
         # MHA
@@ -99,7 +100,7 @@ class WiAiId(Net):
         #MultiScaleCNN
         MultiScaleCNN_cfg = model_cfg['MultiScaleCNN_cfg'];
         MultiScaleCNN_cfg['do'] = self.do;
-        MultiScaleCNN_cfg['channel_in'] = torch.prod(self.dim_in[2:]);
+        MultiScaleCNN_cfg['channel_in'] = np.prod(self.dim_in[2:]);
         MultiScaleCNN_cfg['dim_in'] = self.dim_in;
         self.MultiScaleCNN = MultiScaleCNN(MultiScaleCNN_cfg);
 
@@ -110,7 +111,7 @@ class WiAiId(Net):
                 torch.nn.Linear(layers[i], layers[i + 1]),
                 torch.nn.ReLU()
             )
-            for i in range(len(layers))
+            for i in range(len(layers) - 1)
         ] + [
             torch.nn.Softmax(dim = -1)
         ]);
@@ -122,13 +123,13 @@ class WiAiId(Net):
         );
 
         # env_classifier
-        layers = [self.do] + model_cfg['env_classifier']['hid_layers'] + [self.known_env_num];
+        layers = [self.do] + model_cfg['env_classifier']['hid_layers'] + [self.known_env_num + 1];
         self.env_classifier = torch.nn.Sequential(*[
             torch.nn.Sequential(
                 torch.nn.Linear(layers[i], layers[i + 1]),
                 torch.nn.ReLU()
             )
-            for i in range(len(layers))
+            for i in range(len(layers) - 1)
         ] + [
             torch.nn.Softmax(dim = -1)
         ]);
@@ -139,7 +140,7 @@ class WiAiId(Net):
         #[B, T, R, F]
         amps = amps.flatten(2, -1);
         pos_embs = amps + self.pos_enc(amps);
-        features = self.MHA(pos_embs);
+        features = self.MHA(pos_embs, pos_embs, pos_embs);
         features = self.MultiScaleCNN(features);
         #[B, do]
         return features;
@@ -147,7 +148,7 @@ class WiAiId(Net):
     def p_classify(self, amps):
         return self.p_classifier(self.encoder(amps));
 
-    def cal_loss(self, amps, ids, envs, amps_t):
+    def cal_loss(self, amps, ids, envs, amps_t, envs_t):
         #[B, do]
         feature_s = self.encoder(amps);
         feature_t = self.encoder(amps_t);
@@ -163,7 +164,12 @@ class WiAiId(Net):
         #env
         refeture_s = self.p_net(id_s_probs);
         env_s_probs = self.env_classifier(refeture_s + feature_s);
-        loss_env = torch.nn.CrossEntropyLoss()(env_s_probs, envs);
+        loss_env_s = torch.nn.CrossEntropyLoss()(env_s_probs, envs);
+
+        refeture_t = self.p_net(self.p_classifier(feature_t));
+        env_t_probs = self.env_classifier(refeture_t + feature_t);
+        loss_env_t = torch.nn.CrossEntropyLoss()(env_t_probs, envs_t);
+        loss_env = loss_env_s + loss_env_t;
         return loss_id - self.alpha * loss_env + self.beta * loss_mmd + self.gamma * loss_coral;
 
     

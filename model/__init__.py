@@ -11,6 +11,7 @@ from model.framework.deep_wiid import DeepWiID
 from model.framework.maiu import MAIUId, MAIU
 from model.framework.csiid import CSIID
 from model.framework.gateid import GateID
+from model.framework.wiai_id import WiAiId
 
 device = glb_var.get_value('device');
 logger = glb_var.get_value('logger');
@@ -43,6 +44,8 @@ def generate_model(model_cfg):
         model = CSIID(model_cfg);
     elif model_cfg['name'].lower() == 'gait_id':
         model = GateID(model_cfg);
+    elif model_cfg['name'].lower() == 'wiai_id':
+        model = WiAiId(model_cfg);
     else:
         raise NotImplementedError
 

@@ -192,13 +192,17 @@ class DATrainer(Trainer):
     def _train_step_unl(self):
         epoch_train_loss, epoch_train_acc = [], [];
         self.model.train();
+        target_iter = iter(self.target_loader);
         for amps, ids, envs in iter(self.train_loader):
             if hasattr(torch.cuda, 'empty_cache'):
                 torch.cuda.empty_cache();
             self.optimizer.zero_grad();
-            amps_t, ids_t, envs_t = iter(self.target_loader).__next__();
-
-            loss = self.model.cal_loss(amps, ids, envs, amps_t);
+            try:
+                amps_t, ids_t, envs_t = next(target_iter);
+            except StopIteration:
+                target_iter = iter(self.target_loader);
+                amps_t, ids_t, envs_t = next(target_iter);
+            loss = self.model.cal_loss(amps, ids, envs, amps_t, envs_t);
             self._check_nan(loss);
             loss.backward();
             torch.nn.utils.clip_grad_norm_(
