@@ -12,7 +12,7 @@ from model.framework.maiu import MAIUId, MAIU
 from model.framework.csiid import CSIID
 from model.framework.gateid import GateID
 from model.framework.wiai_id import WiAiId
-from model.framework.autoencoder import AE
+from model.framework.autoencoder import AE, CAE
 
 device = glb_var.get_value('device');
 logger = glb_var.get_value('logger');
@@ -49,6 +49,8 @@ def generate_model(model_cfg):
         model = WiAiId(model_cfg);
     elif model_cfg['name'].lower() == 'ae':
         model = AE(model_cfg);
+    elif model_cfg['name'].lower() == 'cae':
+        model = CAE(model_cfg);
     else:
         raise NotImplementedError
 

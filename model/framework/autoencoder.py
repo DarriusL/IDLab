@@ -75,3 +75,35 @@ class AE(Net):
 class CAE(AE):
     def __init__(self, model_cfg) -> None:
         Net.__init__(self, model_cfg);
+
+        #encoder
+        layers = [self.dim_in[2]] + model_cfg['encoder_hid_layers'];
+        self.encoder = torch.nn.Sequential(*[
+            torch.nn.Sequential(
+                torch.nn.Conv2d(layers[i], layers[i + 1], kernel_size = 3, stride = 2, padding = 1),
+                torch.nn.ReLU()
+            )
+            for i in range(len(layers) - 1)
+        ]);
+
+        #decoder
+        layers = model_cfg['decoder_hid_layers'] + [self.dim_in[2]];
+        self.decoder = torch.nn.Sequential(*[
+            torch.nn.Sequential(
+                torch.nn.ConvTranspose2d(layers[i], layers[i + 1], kernel_size=3, stride=2, padding=1, output_padding=(1, 1)),
+                torch.nn.Sigmoid() if i + 2 == len(layers) else torch.nn.ReLU()
+            )
+            for i in range(len(layers) - 1)
+        ]);
+
+        self.loss_func = net_util.get_loss_func(model_cfg['loss']);
+        self.threshold = .0;
+        self.thresholds = dict();
+
+        self.is_Intrusion_Detection = True;
+
+    def reconstruct(self, amps):
+        #amps[B, T, R, F]
+        feature = self.encoder(amps.permute(0, 2, 1, 3));
+        csi_rcst = self.decoder(feature).permute(0, 2, 1, 3);
+        return csi_rcst;
