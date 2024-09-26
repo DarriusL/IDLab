@@ -58,7 +58,7 @@
         "do":256,
         "encoder_cfg":{
             "hid_layers":[
-                8192,
+                1024,
                 1024,
                 512
             ],
@@ -70,7 +70,7 @@
             "hid_layers":[
                 512,
                 1024,
-                8192
+                1024
             ],
             "activation_fn":"relu",
             "drop_out":0.5,

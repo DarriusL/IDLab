@@ -34,7 +34,7 @@ class AE(Net):
     def reconstruct(self, amps):
         #amps[B, T, R, F]
         feature = self.encoder(amps.flatten(1, -1));
-        csi_rcst = self.decoder(feature);
+        csi_rcst = self.decoder(feature).reshape(amps.shape);
         return csi_rcst;
 
     def cal_loss(self, amps, ids, envs, is_target_data = False, keep_batch = False):
@@ -70,4 +70,8 @@ class AE(Net):
         Is it an intruder.
         '''
         rcst_errors = self.cal_loss(amps, None, None, keep_batch = True);
-        return rcst_errors >= self.threshold;
+        return rcst_errors >= self.threshold
+
+class CAE(AE):
+    def __init__(self, model_cfg) -> None:
+        Net.__init__(self, model_cfg);
