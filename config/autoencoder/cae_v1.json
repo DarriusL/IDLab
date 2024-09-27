@@ -56,14 +56,14 @@
         "name":"cae",
         "loss":"nmse",
         "encoder_hid_layers":[
-            64,
-            512,
+            128,
+            1024,
             1024
         ],
         "decoder_hid_layers":[
             1024,
-            512,
-            64
+            1024,
+            128
         ],
         "threshold_percents":[
             85,

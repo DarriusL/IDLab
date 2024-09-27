@@ -10,7 +10,7 @@
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":8,
+                "batch_size":24,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -63,7 +63,7 @@
             }
         },
         "test":{
-            "dir":"data/v1/test_legal.mat",
+            "dir":"data/v1/test.mat",
             "loader":{
                 "num_workers":4,
                 "pin_memory":true,
@@ -76,35 +76,35 @@
     },
     "train":{
         "is_DA":false,
-        "max_epoch":300,
+        "max_epoch":100,
         "valid_start_epoch":20,
         "valid_step":5,
         "stop_train_step_valid_not_improve":6,
-        "valid_metrics":"acc",
-        "valid_metrics_less":false,
+        "valid_metrics":"loss",
+        "valid_metrics_less":true,
         "optimizer":{
             "lr":1e-5,
             "weight_decay":1e-4
         }
     },
     "model":{
-        "name":"csinet_trans",
-        "is_norm_first":true,
-        "d":64,
-        "t":64,
+        "name":"bird",
+        "pretrained_enc_dir":"model/pretrained/bird_encoder_opt2/model_end.pt",
+        "loss":"nmse",
         "do":256,
-        "TLinear":{
+        "d":16,
+        "t":64,
+        "TLinear1":{
             "hid_layers":[
-                4096,
-                1024, 
-                256
+                8,
+                32
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
             "end_with_softmax":false
         },
         "csinet":{
-            "n_refine":2,
+            "n_refine":4,
             "hid_layers":[
                 8,
                 16,
@@ -115,41 +115,41 @@
             ],
             "activation_fn":"relu"
         },
-        "trans2":{
-            "max_len":600,
-            "is_norm_first":true,
-            "d_fc":2048,
-            "n_heads": 4,
-            "n_layers": 5
-        },
-        "tail_net":{
+        "FLinear":{
             "hid_layers":[
-                1024, 
-                512,
-                256
+                16,
+                32
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
             "end_with_softmax":false
         },
-        "p_classifier":{
+        "RLinear":{
             "hid_layers":[
-                128, 
-                64
+                16,
+                8
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
-            "end_with_softmax":true
+            "end_with_softmax":false
         },
-        "env_classifier":{
+        "TLinear2":{
             "hid_layers":[
-                128, 
-                64
+                256,
+                1024,
+                4096
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
-            "end_with_softmax":true
+            "end_with_softmax":false
         },
-        "lambda_":-1
+        "threshold_percents":[
+            85,
+            90,
+            92,
+            95,
+            97,
+            99
+        ]
     }
 }

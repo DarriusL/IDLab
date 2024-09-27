@@ -53,8 +53,8 @@
         }
     },
     "model":{
-        "name":"csinet_dec",
-        "pretrained_enc_dir":"model/pretrained/csinet_trans_v2_opt2/model_end.pt",
+        "name":"bird",
+        "pretrained_enc_dir":"model/pretrained/bird_encoder_opt2/model_end.pt",
         "loss":"mse",
         "do":256,
         "d":16,

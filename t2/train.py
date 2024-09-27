@@ -202,7 +202,7 @@ class DATrainer(Trainer):
             except StopIteration:
                 target_iter = iter(self.target_loader);
                 amps_t, ids_t, envs_t = next(target_iter);
-            loss = self.model.cal_loss(amps, ids, envs, amps_t, envs_t);
+            loss = self.model.cal_loss(amps, ids, envs, amps_t, envs_t, is_target_data = True);
             self._check_nan(loss);
             loss.backward();
             torch.nn.utils.clip_grad_norm_(

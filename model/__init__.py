@@ -1,9 +1,6 @@
 
 from lib import glb_var
-from model.framework.encoder.double_trans import DoubleTrans
-from model.framework.encoder.aaconv_trans import AAconvTrans
-from model.framework.encoder.csinet_trans import CSINetTrans
-from model.framework.decoder.csinet_dec import CSINetDec
+from model.framework.bird import BIRDEncoder, BIRD
 from model.framework.caution.encoder import Encoder
 from model.framework.caution.caution import Caution
 from model.framework.gait_enhance import GaitEnhance
@@ -21,14 +18,10 @@ __all__ = ['generate_model']
 
 #TODO:simplify
 def generate_model(model_cfg):
-    if model_cfg['name'].lower() == 'double_trans':
-        model = DoubleTrans(model_cfg);
-    elif model_cfg['name'].lower() == 'aaconv_trans':
-        model = AAconvTrans(model_cfg);
-    elif model_cfg['name'].lower() == 'csinet_trans':
-        model = CSINetTrans(model_cfg);
-    elif model_cfg['name'].lower() == 'csinet_dec':
-        model = CSINetDec(model_cfg);
+    if model_cfg['name'].lower() == 'bird':
+        model = BIRD(model_cfg);
+    elif model_cfg['name'].lower() == 'bird_encoder':
+        model = BIRDEncoder(model_cfg);
     elif model_cfg['name'].lower() == 'caution_encoder':
         model = Encoder(model_cfg);
     elif model_cfg['name'].lower() == 'caution':

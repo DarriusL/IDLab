@@ -10,7 +10,7 @@
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":8,
+                "batch_size":2,
                 "drop_last":true,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -21,7 +21,7 @@
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":8,
+                "batch_size":2,
                 "drop_last":true,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -59,16 +59,16 @@
         "valid_metrics":"acc",
         "valid_metrics_less":false,
         "optimizer":{
-            "lr":1e-5,
+            "lr":1e-4,
             "weight_decay":1e-4
         }
     },
     "model":{
         "name":"wiai_id",
         "do":256,
-        "alpha":1,
-        "beta":1,
-        "gamma":1,
+        "alpha":0.5,
+        "beta":0.2,
+        "gamma":0.2,
         "MHA_cfg":{
             "d_q":64,
             "d_k":64,

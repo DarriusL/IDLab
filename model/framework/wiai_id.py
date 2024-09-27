@@ -148,24 +148,27 @@ class WiAiId(Net):
     def p_classify(self, amps):
         return self.p_classifier(self.encoder(amps));
 
-    def cal_loss(self, amps, ids, envs, amps_t, envs_t):
+    def cal_loss(self, amps, ids, envs, amps_t = None, envs_t = None, is_target_data = False):
         #[B, do]
         feature_s = self.encoder(amps);
+        #Identification of source
+        id_s_probs = self.p_classifier(feature_s);
+        loss_id = torch.nn.CrossEntropyLoss()(id_s_probs, ids);
+        #env loss of  source
+        refeture_s = self.p_net(id_s_probs);
+        env_s_probs = self.env_classifier(refeture_s + feature_s);
+        loss_env_s = torch.nn.CrossEntropyLoss()(env_s_probs, envs);
+        if amps_t is None:
+            #valid
+            return loss_id +  loss_env_s;
+        #[B, do]
         feature_t = self.encoder(amps_t);
 
         #loss of feature between source and target
         loss_mmd = net_util.mmd_loss(feature_s, feature_t);
         loss_coral = net_util.coral_loss(feature_s, feature_t);
 
-        #Identification of source
-        id_s_probs = self.p_classifier(feature_s);
-        loss_id = torch.nn.CrossEntropyLoss()(id_s_probs, ids);
-
-        #env
-        refeture_s = self.p_net(id_s_probs);
-        env_s_probs = self.env_classifier(refeture_s + feature_s);
-        loss_env_s = torch.nn.CrossEntropyLoss()(env_s_probs, envs);
-
+        #env loss of  target
         refeture_t = self.p_net(self.p_classifier(feature_t));
         env_t_probs = self.env_classifier(refeture_t + feature_t);
         loss_env_t = torch.nn.CrossEntropyLoss()(env_t_probs, envs_t);

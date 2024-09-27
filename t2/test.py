@@ -17,7 +17,7 @@ class Tester():
 
         self.test_loader, _ = data_wrapper(deepcopy(self.config), 'test');
 
-        if self.best_model.name.lower() in ['csinet_dec']:
+        if self.best_model.name.lower() in ['csinet_dec', 'ae', 'cae']:
             self.test_func = self._ae_test;
             self.best_model.threshold_percents = config['model']['threshold_percents'];
             self.end_model.threshold_percents = config['model']['threshold_percents'];

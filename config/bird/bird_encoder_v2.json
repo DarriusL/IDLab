@@ -4,13 +4,13 @@
     "known_p_num":10,
     "known_env_num":2,
     "data":{
-        "dataset":"v1",
+        "dataset":"v2",
         "train":{
-            "dir":"data/v1/train.mat",
+            "dir":"data/v2/train.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":24,
+                "batch_size":8,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -52,7 +52,18 @@
             }
         },
         "valid":{
-            "dir":"data/v1/valid.mat",
+            "dir":"data/v2/valid.mat",
+            "loader":{
+                "num_workers":4, 
+                "pin_memory":true,
+                "batch_size":8,
+                "drop_last":false,
+                "shuffle":true,
+                "prefetch_factor":4
+            }
+        },
+        "target":{
+            "dir":"data/v2/target.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
@@ -63,7 +74,7 @@
             }
         },
         "test":{
-            "dir":"data/v1/test.mat",
+            "dir":"data/v2/test_legal.mat",
             "loader":{
                 "num_workers":4,
                 "pin_memory":true,
@@ -75,36 +86,36 @@
         }
     },
     "train":{
-        "is_DA":false,
-        "max_epoch":100,
+        "is_DA":true,
+        "max_epoch":300,
         "valid_start_epoch":20,
         "valid_step":5,
         "stop_train_step_valid_not_improve":6,
-        "valid_metrics":"loss",
-        "valid_metrics_less":true,
+        "valid_metrics":"acc",
+        "valid_metrics_less":false,
         "optimizer":{
             "lr":1e-5,
             "weight_decay":1e-4
         }
     },
     "model":{
-        "name":"csinet_dec",
-        "pretrained_enc_dir":"model/pretrained/csinet_trans_v2_opt2/model_end.pt",
-        "loss":"nmse",
-        "do":256,
-        "d":16,
+        "name":"bird_encoder",
+        "is_norm_first":true,
+        "d":64,
         "t":64,
-        "TLinear1":{
+        "do":256,
+        "TLinear":{
             "hid_layers":[
-                8,
-                32
+                4096,
+                1024, 
+                256
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
             "end_with_softmax":false
         },
         "csinet":{
-            "n_refine":4,
+            "n_refine":2,
             "hid_layers":[
                 8,
                 16,
@@ -115,41 +126,41 @@
             ],
             "activation_fn":"relu"
         },
-        "FLinear":{
+        "trans2":{
+            "max_len":600,
+            "is_norm_first":true,
+            "d_fc":2048,
+            "n_heads": 4,
+            "n_layers": 5
+        },
+        "tail_net":{
             "hid_layers":[
-                16,
-                32
+                1024, 
+                512,
+                256
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
             "end_with_softmax":false
         },
-        "RLinear":{
+        "p_classifier":{
             "hid_layers":[
-                16,
-                8
+                128, 
+                64
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
-            "end_with_softmax":false
+            "end_with_softmax":true
         },
-        "TLinear2":{
+        "env_classifier":{
             "hid_layers":[
-                256,
-                1024,
-                4096
+                128, 
+                64
             ],
             "activation_fn":"mish",
             "drop_out":0.5,
-            "end_with_softmax":false
+            "end_with_softmax":true
         },
-        "threshold_percents":[
-            85,
-            90,
-            92,
-            95,
-            97,
-            99
-        ]
+        "lambda_":-1
     }
 }

@@ -4,11 +4,11 @@
     "known_p_num":10,
     "known_env_num":2,
     "data":{
-        "dataset":"v2",
+        "dataset":"v1",
         "train":{
-            "dir":"data/v2/train.mat",
+            "dir":"data/v1/train.mat",
             "loader":{
-                "num_workers":0, 
+                "num_workers":4, 
                 "pin_memory":true,
                 "batch_size":8,
                 "drop_last":false,
@@ -52,9 +52,9 @@
             }
         },
         "valid":{
-            "dir":"data/v2/valid.mat",
+            "dir":"data/v1/valid.mat",
             "loader":{
-                "num_workers":0, 
+                "num_workers":4, 
                 "pin_memory":true,
                 "batch_size":8,
                 "drop_last":false,
@@ -62,20 +62,10 @@
                 "prefetch_factor":4
             }
         },
-        "target":{
-            "dir":"data/v2/target.mat",
-            "loader":{
-                "num_workers":0, 
-                "pin_memory":true,
-                "batch_size":8,
-                "drop_last":false,
-                "shuffle":true
-            }
-        },
         "test":{
-            "dir":"data/v2/test_legal.mat",
+            "dir":"data/v1/test_legal.mat",
             "loader":{
-                "num_workers":0, 
+                "num_workers":4,
                 "pin_memory":true,
                 "batch_size":8,
                 "drop_last":false,
@@ -85,7 +75,7 @@
         }
     },
     "train":{
-        "is_DA":true,
+        "is_DA":false,
         "max_epoch":300,
         "valid_start_epoch":20,
         "valid_step":5,
@@ -98,7 +88,7 @@
         }
     },
     "model":{
-        "name":"double_trans",
+        "name":"bird_encoder",
         "is_norm_first":true,
         "d":64,
         "t":64,
@@ -113,12 +103,17 @@
             "drop_out":0.5,
             "end_with_softmax":false
         },
-        "trans1":{
-            "max_len":200,
-            "is_norm_first":true,
-            "d_fc":2048,
-            "n_heads": 3,
-            "n_layers": 3
+        "csinet":{
+            "n_refine":2,
+            "hid_layers":[
+                8,
+                16,
+                32,
+                32,
+                16,
+                8
+            ],
+            "activation_fn":"relu"
         },
         "trans2":{
             "max_len":600,
