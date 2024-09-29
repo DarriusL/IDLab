@@ -9,7 +9,7 @@ class CNNBlock(torch.nn.Module):
         super().__init__();
         net = [
             torch.nn.Conv1d(channel_in, channel_out, kernel_size = 5, padding = 2),
-            torch.nn.BatchNorm1d(channel_out),
+            torch.nn.LayerNorm(channel_out),
             torch.nn.MaxPool1d(kernel_size = 2, stride = 2)
         ];
         if avgpool:
@@ -174,5 +174,3 @@ class WiAiId(Net):
         loss_env_t = torch.nn.CrossEntropyLoss()(env_t_probs, envs_t);
         loss_env = loss_env_s + loss_env_t;
         return loss_id - self.alpha * loss_env + self.beta * loss_mmd + self.gamma * loss_coral;
-
-    

@@ -48,5 +48,5 @@ def generate_model(model_cfg):
         raise NotImplementedError
 
     num_params = sum(p.numel() for p in model.parameters())
-    logger.info(f'The number of parameters of the [{model.name}]: {num_params / 10 ** 6:.6f} M');
+    logger.info(f'The number of parameters of the [{model.name}]: {num_params / 10 ** 6:.6f} M\n');
     return model.to(device);

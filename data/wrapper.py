@@ -37,7 +37,12 @@ class loader_wrapper():
         self.acfg = deepcopy(aug_cfg);
         self.aug_cfg = None;
         self.enable_aug();
+        self.n_batchs_per_epoch = len(loader);
     
+    def __len__(self):
+        #Not data legnth, but the number of batchs per epoch
+        return self.n_batchs_per_epoch;
+
     def enable_aug(self):
         self.aug_cfg = self.acfg;
         if self.aug_cfg is not None:

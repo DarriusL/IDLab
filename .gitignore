@@ -11,6 +11,7 @@
 #Data
 __pycache__/
 cache/
+runs/
 model/pretrained
 
 

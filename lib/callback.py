@@ -49,7 +49,7 @@ class Logger():
     '''
     def __init__(self, level = logging.INFO, filename = './cache/logger/logger.log') -> None:
         #format for the logger
-        self.format = logging.Formatter(fmt = '\n[%(asctime)s]-[%(levelname)s - %(name)s] \n%(message)s');
+        self.format = logging.Formatter(fmt = '\n[%(asctime)s]-[%(levelname)s - %(filename)s:%(lineno)d - %(funcName)s] \n%(message)s');
         self.level = level;
         path, _ = os.path.split(filename);
         if not os.path.exists(path):

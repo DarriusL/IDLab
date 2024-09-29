@@ -4,7 +4,7 @@ from data.wrapper import data_wrapper
 from model import generate_model
 from model.net_util import GradualWarmupScheduler
 import numpy as np
-import torch
+import torch, tqdm, sys, time
 
 logger = glb_var.get_value('logger');
 device = glb_var.get_value('device');
@@ -47,10 +47,11 @@ class Trainer():
             logger.error('Loss is nan.');
             raise callback.CustomException('ValueError');
 
-    def _train_step(self):
+    def _train_step(self, epoch):
         epoch_train_loss, epoch_train_acc = [], [];
         self.model.train();
-        for amps, ids, envs in iter(self.train_loader):
+        for amps, ids, envs in tqdm.tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.max_epoch}", unit="batch", leave=False, file=sys.stdout):
+        # for amps, ids, envs in iter(self.train_loader):
             if hasattr(torch.cuda, 'empty_cache'):
                 torch.cuda.empty_cache();
             self.optimizer.zero_grad();
@@ -67,6 +68,7 @@ class Trainer():
         return np.mean(epoch_train_loss), np.mean(epoch_train_acc);
 
     def train(self):
+        train_start = time.time();
         ACC_NAME = 'Intrusion' if self.model.is_Intrusion_Detection  else 'Identification';
         save_dir = self.config['save_dir'];
         train_loss, valid_loss = [], [];
@@ -75,14 +77,17 @@ class Trainer():
         valid_cur = None;
         valid_cnt = 0;
         for epoch in range(self.max_epoch):
-            epoch_train_loss, accuracy = self._train_step();
+            epoch_train_loss, accuracy = self._train_step(epoch);
             train_loss.append(epoch_train_loss);
             train_acc.append(accuracy);
-            acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {train_acc[-1] * 100 :.6f} %';
+            acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {train_acc[-1] * 100 :.6f} %\n';
+            time_info = f'Accumulated training time:[{util.s2hms(time.time() - train_start)}]\n' + \
+                        'Estimated time remaining:[' + colortext.YELLOW + \
+                        f'{util.s2hms((time.time() - train_start)/(epoch + 1) * (self.max_epoch - epoch - 1))}' + colortext.RESET + ']\n';
             logger.info(f'[{self.model.name}]-[train]-[{device}] - [{self.config["data"]["dataset"]}] - [metrics: {self.valid_metrics.lower()}]\n'
                         f'[epoch: {epoch + 1}/{self.max_epoch}] - lr:{self.warmupScheduler.get_last_lr()[0]:.8f}\n' 
                         f'train loss:{train_loss[-1]:.8f}\n'+
-                        acc_info);
+                        acc_info + time_info);
             self.warmupScheduler.step();
 
             if (epoch + 1) >= self.valid_start_epoch and (epoch + 1) % self.valid_step == 0:
@@ -163,13 +168,14 @@ class DATrainer(Trainer):
         self.target_loader, _ = data_wrapper(cfg_t, 'target');
         self._train_step_func = self._train_step_unl if self.model.name.lower() in ['wiai_id'] else self._train_step_l;
     
-    def _train_step(self):
-        return self._train_step_func();
+    def _train_step(self, epoch):
+        return self._train_step_func(epoch);
 
-    def _train_step_l(self):
+    def _train_step_l(self, epoch):
         epoch_train_loss, epoch_train_acc = [], [];
         self.model.train();
-        for amps, ids, envs in iter(self.train_loader):
+        for amps, ids, envs in tqdm.tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.max_epoch}", unit="batch", leave=False, file=sys.stdout):
+        # for amps, ids, envs in iter(self.train_loader):
             if hasattr(torch.cuda, 'empty_cache'):
                 torch.cuda.empty_cache();
             self.optimizer.zero_grad();
@@ -189,11 +195,12 @@ class DATrainer(Trainer):
             epoch_train_acc.append(self.model.cal_accuracy(amps_t, ids_t, envs_t))
         return np.mean(epoch_train_loss), np.mean(epoch_train_acc);
 
-    def _train_step_unl(self):
+    def _train_step_unl(self, epoch):
         epoch_train_loss, epoch_train_acc = [], [];
         self.model.train();
         target_iter = iter(self.target_loader);
-        for amps, ids, envs in iter(self.train_loader):
+        for amps, ids, envs in tqdm.tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.max_epoch}", unit="batch", leave=False, file=sys.stdout):
+        # for amps, ids, envs in iter(self.train_loader):
             if hasattr(torch.cuda, 'empty_cache'):
                 torch.cuda.empty_cache();
             self.optimizer.zero_grad();
@@ -225,9 +232,10 @@ class CautionEncTrainer(Trainer):
         epoch_train_loss, epoch_train_acc = [], [];
         if ((epoch + 1) >= self.update_start_epoch and (epoch + 1) % self.update_step == 0) or epoch  == 0:
             self.model.update_center(self.support_loader);
-            logger.info('Caution: update!');
+            logger.info('Caution: update center!');
         self.model.train();
-        for amps, ids, envs in iter(self.query_loader):
+        for amps, ids, envs in tqdm.tqdm(self.query_loader, desc=f"Epoch {epoch + 1}/{self.max_epoch}", unit="batch", leave=False, file=sys.stdout):
+        # for amps, ids, envs in iter(self.query_loader):
             if hasattr(torch.cuda, 'empty_cache'):
                 torch.cuda.empty_cache();
             self.optimizer.zero_grad();
@@ -245,6 +253,7 @@ class CautionEncTrainer(Trainer):
 
 
     def train(self):
+        train_start = time.time();
         if self.model.is_Intrusion_Detection: raise RuntimeError;
         ACC_NAME = 'Identification';
         save_dir = self.config['save_dir'];
@@ -255,10 +264,13 @@ class CautionEncTrainer(Trainer):
             train_loss.append(epoch_train_loss);
             train_acc.append(accuracy);
             acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {train_acc[-1] * 100 :.6f} %';
+            time_info = f'Accumulated training time:[{util.s2hms(time.time() - train_start)}]\n' + \
+                        'Estimated time remaining:[' + colortext.YELLOW + \
+                        f'{util.s2hms((time.time() - train_start)/(epoch + 1) * (self.max_epoch - epoch - 1))}' + colortext.RESET + ']\n';
             logger.info(f'[{self.model.name}]-[train]-[{device}] - [{self.config["data"]["dataset"]}] - [metrics: {self.valid_metrics.lower()}]\n'
                         f'[epoch: {epoch + 1}/{self.max_epoch}] - lr:{self.warmupScheduler.get_last_lr()[0]:.8f}\n' 
                         f'train loss:{train_loss[-1]:.8f}\n'+
-                        acc_info);
+                        acc_info + time_info);
             self.warmupScheduler.step();
             if train_acc[-1] >= acc_best:
                 acc_best = train_acc[-1];
