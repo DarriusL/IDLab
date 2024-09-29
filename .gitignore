@@ -6,7 +6,8 @@
 *.pyc
 *.log
 *.mat
-
+*.txt
+*.mlx
 
 #Data
 __pycache__/
