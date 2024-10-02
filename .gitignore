@@ -4,9 +4,12 @@
 # Python
 *.ipynb
 *.pyc
+
+#file
 *.log
 *.mat
 *.txt
+!requirements.txt
 *.mlx
 
 #Data

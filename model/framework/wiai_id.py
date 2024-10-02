@@ -1,5 +1,5 @@
 import torch
-from lib import util
+from lib import util, glb_var
 import numpy as np
 from model import net_util, attnet
 from model.framework.base import Net
@@ -9,7 +9,7 @@ class CNNBlock(torch.nn.Module):
         super().__init__();
         net = [
             torch.nn.Conv1d(channel_in, channel_out, kernel_size = 5, padding = 2),
-            torch.nn.LayerNorm(channel_out),
+            torch.nn.BatchNorm1d(channel_out),
             torch.nn.MaxPool1d(kernel_size = 2, stride = 2)
         ];
         if avgpool:
@@ -18,7 +18,6 @@ class CNNBlock(torch.nn.Module):
 
     def forward(self, x):
         return self.net(x);
-    
 
 class MultiScaleCNN(Net):
     def __init__(self, model_cfg) -> None:
@@ -148,7 +147,7 @@ class WiAiId(Net):
     def p_classify(self, amps):
         return self.p_classifier(self.encoder(amps));
 
-    def cal_loss(self, amps, ids, envs, amps_t = None, envs_t = None, is_target_data = False):
+    def cal_loss(self, amps, ids, envs, amps_t = None, ids_t = None, envs_t = None):
         #[B, do]
         feature_s = self.encoder(amps);
         #Identification of source
@@ -174,3 +173,5 @@ class WiAiId(Net):
         loss_env_t = torch.nn.CrossEntropyLoss()(env_t_probs, envs_t);
         loss_env = loss_env_s + loss_env_t;
         return loss_id - self.alpha * loss_env + self.beta * loss_mmd + self.gamma * loss_coral;
+
+glb_var.register_model('WiAiId', WiAiId);

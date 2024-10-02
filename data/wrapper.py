@@ -66,11 +66,12 @@ class loader_wrapper():
 
 @decorator.Timer
 def v1_wrapper(config:dict, mode):
-    data = h5py.File(config['data'][mode]['dir'], 'r');
+    datadir = config['data'][mode]['dir'];
+    data = h5py.File(datadir, 'r');
     data_dict = {};
     data_dict['mode'] = 'v1';
     data_dict['n'] = data['data']['env'].shape[0];
-    logger.info(f'Length of {mode} data:{data_dict["n"]}');
+    logger.info(f'Data dir:{datadir}\nLength of {mode} data:{data_dict["n"]}');
     #[N, T, R, F] -> [N, 6000, 3, 56]
     data_dict['amps'] = torch.tensor(data['data']['amp'][:]).permute(3, 2, 1, 0).float();
     
@@ -96,7 +97,9 @@ def v1_wrapper(config:dict, mode):
 def v3_warapper(config:dict, mode):
     if mode.lower() in ['valid', 'test']:
         return v1_wrapper(config, mode);
-    data = h5py.File(config['data'][mode]['dir'], 'r');
+    datadir = config['data'][mode]['dir'];
+    logger.info(f'Data dir:{datadir}');
+    data = h5py.File(datadir, 'r');
     data_dict = {};
     data_dict['mode'] = 'v3';
     data_dict['n'] = config['known_p_num'];

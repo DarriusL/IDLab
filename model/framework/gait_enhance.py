@@ -87,7 +87,8 @@ class GaitEnhance(Net):
         id_probs = self.out_layer(features1.flatten(1, -1));
         return id_probs;
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
+glb_var.register_model('GaitEnhance', GaitEnhance);

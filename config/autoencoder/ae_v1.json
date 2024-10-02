@@ -53,7 +53,7 @@
         }
     },
     "model":{
-        "name":"ae",
+        "name":"AE",
         "loss":"nmse",
         "do":256,
         "encoder_cfg":{

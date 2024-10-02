@@ -53,7 +53,7 @@
         }
     },
     "model":{
-        "name":"gait_enhance",
+        "name":"GaitEnhance",
         "window_size":40,
         "blks_cfg":{
             "hid_layers":[

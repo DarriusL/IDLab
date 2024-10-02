@@ -1,5 +1,5 @@
 #Bi-Stage Identity Recognition and Intrusion Detection
-import torch
+import torch, sklearn.svm, sklearn.preprocessing,joblib
 import numpy as np
 from lib import util, glb_var
 from model import net_util
@@ -133,24 +133,30 @@ class BIRDEncoder(Net):
     def p_classify(self, amps):
         return self.p_classifier(self.encoder(amps));
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs, amps_t = None, ids_t = None, envs_t = None):
         #amps:[N, T, R, F]
         #ids:[N]
         #envs:[N]
         feature = self.encoder(amps);
         id_probs = self.p_classifier(feature);
-        p_loss = torch.nn.CrossEntropyLoss()(id_probs, ids);
-        if not is_target_data:
-            env_probs = self.env_classifier(net_util.GradientReversalF.apply(feature, self.lambda_));
-            env_loss = torch.nn.CrossEntropyLoss()(env_probs, envs);
-            return p_loss + env_loss;
-        return p_loss;
+        id_loss = torch.nn.CrossEntropyLoss()(id_probs, ids);
+        env_probs = self.env_classifier(net_util.GradientReversalF.apply(feature, self.lambda_));
+        env_loss = torch.nn.CrossEntropyLoss()(env_probs, envs);
+        src_loss = id_loss + env_loss;
+        if amps_t is None:
+            return src_loss;
+        feature_t = self.encoder(amps_t);
+        id_probs_t = self.p_classifier(feature_t);
+        id_loss_t = torch.nn.CrossEntropyLoss()(id_probs_t, ids_t);
+
+        return src_loss + id_loss_t;
 
 class BIRD(Net):
     def __init__(self, model_cfg) -> None:
         super().__init__(model_cfg);
         #load and freeze Parameters
-        self.pretrained_enc = torch.load(self.pretrained_enc_dir, weights_only=False)['model'].to(device);
+        from model import load_model
+        self.pretrained_enc = load_model(self.pretrained_enc_dir);
         for param in self.pretrained_enc.parameters():
             param.requires_grad = False;
         
@@ -197,11 +203,15 @@ class BIRD(Net):
         self.thresholds = dict();
 
         self.is_Intrusion_Detection = True;
-
+    
+    @torch.no_grad()
+    def encoder(self, amps):
+        return self.pretrained_enc.encoder(amps)
+    
     def reconstruct(self, amps):
         with torch.no_grad():
             #[N, T, R, F] -> [N, do] -> [N, 1, d, d]
-            feature1 = self.pretrained_enc.encoder(amps).reshape(-1, 1, self.d, self.d);
+            feature1 = self.encoder(amps).reshape(-1, 1, self.d, self.d);
         #[N, 1, d, d] -> [N, d, d, 1] -> [N, d, d, t] -> [N, t, d, d]
         feature2 = self.Tlinear1(feature1.permute(0, 3, 2, 1)).permute(0, 3, 2, 1);
         #[N, t, d, d]
@@ -252,4 +262,36 @@ class BIRD(Net):
 class BIRDEncoderSVM(Net):
     def __init__(self, model_cfg) -> None:
         super().__init__(model_cfg);
-        self.pretrained_enc = torch.load(self.pretrained_enc_dir)['model'].to(device);
+        from model import load_model
+        self.pretrained_enc = load_model(self.pretrained_enc_dir);
+        assert self.do == self.pretrained_enc.do;
+
+        self.detector = sklearn.svm.OneClassSVM(kernel = 'rbf', gamma = 'auto', cache_size = 1024, nu = self.abnormality_rate);
+
+        self.is_Intrusion_Detection = True;
+
+    @torch.no_grad()
+    def encoder(self, amps):
+        return self.pretrained_enc.encoder(amps);
+
+    def conventional_train(self, X, Y):
+        X = sklearn.preprocessing.StandardScaler().fit_transform(X);
+        self.detector.fit(X);
+
+    def intrusion_detection(self, amps):
+        return self.detector.predict(self.encoder(amps).detach().cpu().numpy()) == -1;
+
+    def save(self, save_dir):
+        super().save(save_dir);
+        #save sklearn model
+        joblib.dump(self.detector, save_dir + 'model.pkl');
+        logger.info(f'Sklearn model saved to {save_dir}');
+
+    def load(self, load_dir):
+        super().load(load_dir)
+        self.detector = joblib.load(load_dir + 'model.pkl');
+        logger.info(f'Sklearn model saved to {load_dir}');
+
+glb_var.register_model('BIRDEncoder', BIRDEncoder);
+glb_var.register_model('BIRD', BIRD);
+glb_var.register_model('BIRDEncoderSVM', BIRDEncoderSVM);

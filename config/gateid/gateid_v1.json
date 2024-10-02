@@ -53,7 +53,7 @@
         }
     },
     "model":{
-        "name":"gait_id",
+        "name":"GateID",
         "window_size":40
     }
 }

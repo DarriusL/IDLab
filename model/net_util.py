@@ -238,7 +238,7 @@ def get_free_gpu_memory(device):
     '''
     Retrieve the remaining GPU memory of the device(GB)
     '''
-    if not torch.cuda.is_available():
+    if not torch.cuda.is_available() or device.type == "cpu":
         return .0;
     total_memory = torch.cuda.get_device_properties(device).total_memory
     reserved_memory = torch.cuda.memory_reserved(device)

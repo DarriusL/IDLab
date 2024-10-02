@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from lib import util
+from lib import util, glb_var
 from model.framework.base import Net
 from model import net_util
 
@@ -33,6 +33,8 @@ class DeepWiID(Net):
         id_probs = self.tail_net(features);
         return id_probs;
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
+
+glb_var.register_model('DeepWiID', DeepWiID);

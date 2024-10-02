@@ -217,7 +217,7 @@ class GateID(Net):
         x = self.fc(x[:, -1, :])  # 取最后一个时间步的输出
         return x
     
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps, ids);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
@@ -230,3 +230,5 @@ class GateID(Net):
         id_pred = self.p_classify(amps, ids).argmax(dim = -1);
         acc = (id_pred == ids).cpu().float().mean().item();
         return acc;
+
+glb_var.register_model('GateID', GateID);

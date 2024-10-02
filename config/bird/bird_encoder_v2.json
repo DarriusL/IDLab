@@ -99,7 +99,7 @@
         }
     },
     "model":{
-        "name":"bird_encoder",
+        "name":"BIRDEncoder",
         "is_norm_first":true,
         "d":64,
         "t":64,

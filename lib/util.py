@@ -1,6 +1,7 @@
 # @Time   : 2022.03.03
 # @Author : Darrius Lei
 # @Email  : darrius.lei@outlook.com
+import os, importlib
 import pydash as ps
 import datetime, time, inspect
 from matplotlib import pyplot as plt
@@ -108,15 +109,13 @@ def get_time(separator = '_'):
 def s2hms(s):
     '''Convert s to hms
     '''
-    return time.strftime("%H hour - %M min - %S s", time.gmtime(s));
+    days = s // 86400;
+    return f'{days} day(s) -' + time.strftime("%H hour - %M min - %S s", time.gmtime(s));
 
-def clear_output():
-    '''Eliminate last line of output'''
-    print('\033[F\033[J', end='')
-
-def single_plot(x_data, y_data, x_label, y_label, path):
-    plt.figure(figsize = (10, 6));
-    plt.plot(x_data, y_data);
-    plt.xlabel(x_label);
-    plt.ylabel(y_label);
-    plt.savefig(path, dpi = 400);
+def load_modules_from_directory(directory, package):
+    '''
+    '''
+    for filename in os.listdir(directory):
+        if filename.endswith(".py") and filename != "__init__.py":
+            module_name = filename[:-3]
+            importlib.import_module(f"{package}.{module_name}")

@@ -52,23 +52,23 @@
     },
     "train":{
         "is_DA":true,
-        "max_epoch":100,
-        "valid_start_epoch":20,
-        "valid_step":5,
-        "stop_train_step_valid_not_improve":6,
+        "max_epoch":20,
+        "valid_start_epoch":5,
+        "valid_step":1,
+        "stop_train_step_valid_not_improve":10,
         "valid_metrics":"acc",
         "valid_metrics_less":false,
         "optimizer":{
-            "lr":1e-4,
+            "lr":1e-5,
             "weight_decay":1e-4
         }
     },
     "model":{
-        "name":"wiai_id",
+        "name":"WiAiId",
         "do":256,
-        "alpha":0.5,
-        "beta":0.2,
-        "gamma":0.2,
+        "alpha":1,
+        "beta":0.1,
+        "gamma":0.1,
         "MHA_cfg":{
             "d_q":64,
             "d_k":64,

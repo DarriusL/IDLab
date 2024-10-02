@@ -88,8 +88,8 @@
         }
     },
     "model":{
-        "name":"bird",
-        "pretrained_enc_dir":"model/pretrained/bird_encoder_opt2/model_end.pt",
+        "name":"BIRD",
+        "pretrained_enc_dir":"model/pretrained/bird_encoder_opt2/end",
         "loss":"nmse",
         "do":256,
         "d":16,

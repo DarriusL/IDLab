@@ -1,9 +1,10 @@
 # @Time   : 2023.03.03
 # @Author : Darrius Lei
 # @Email  : darrius.lei@outlook.com
-import logging, os, inspect, smtplib
+import logging, os, smtplib, tqdm, contextlib, sys, linecache, warnings
 from email.mime.text import MIMEText
 from email.header import Header
+from lib import colortext
 
 class CustomException(Exception):
     ''' Used to output exception information if an exception is thrown
@@ -168,3 +169,52 @@ class VarReporter():
                 cnt = 0;
                 content += '\n';
         logger_func(content);
+
+@contextlib.contextmanager
+def no_stdout():
+    '''Redirect sys.stdout output printing to DummyFile
+
+    Example:
+    -------
+    >>> from lib.callback import no_stdout
+    >>> ...
+    >>> with no_stdout():
+    >>>     ...
+    '''
+    class DummyFile(object):
+        file = None
+
+        def __init__(self, file):
+            self.file = file
+
+        def write(self, x):
+            # Avoid print() second call (useless \n)
+            if len(x.rstrip()) > 0:
+                tqdm.tqdm.write(x, file=self.file)
+
+        def flush(self):
+            if hasattr(self.file, 'flush'):
+                self.file.flush()
+    save_stdout = sys.stdout
+    sys.stdout = DummyFile(sys.stdout)
+    yield
+    sys.stdout = save_stdout
+
+def set_custom_tqdm_warning():
+    '''Quick set custom warning handler to use tqdm.write for all warnings to prevent affecting the progress bar output of tqdm
+    '''
+    def custom_tqdm_warning(message, category, filename, lineno, file = None, line = None):
+        '''
+        Custom warning handler to use tqdm.write for all warnings
+        
+        Example:
+        --------
+        >>> from lib.callback import custom_tqdm_warning
+        >>> import warnings
+        >>> warnings.showwarning = custom_tqdm_warning
+        '''
+        code_line = linecache.getline(filename, lineno).strip()
+        tqdm.tqdm.write(f"\n" + colortext.YELLOW 
+                        + f"In {filename}, line {lineno}\n{category.__name__}: {message}\n    Code: {code_line}\n"
+                        + colortext.RESET, file=sys.stdout);
+    warnings.showwarning = custom_tqdm_warning;

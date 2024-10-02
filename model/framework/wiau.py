@@ -1,4 +1,5 @@
 import torch
+from lib import glb_var
 from model.framework.base import Net
 
 
@@ -50,7 +51,7 @@ class ResNetUnit(torch.nn.Module):
         return out
 
 
-class MAIUId(Net):
+class WIAUId(Net):
     def __init__(self, model_cfg):
         super().__init__(model_cfg);
         self.cnn_unit = ConvBlock(3, 64, kernel_size=7, stride=2, padding=3)
@@ -75,12 +76,12 @@ class MAIUId(Net):
         identity_out = self.fc_identity(x)
         return identity_out;
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
 
-class MAIU(Net):
+class WIAU(Net):
     def __init__(self, model_cfg):
         super().__init__(model_cfg);
         self.cnn_unit = ConvBlock(3, 64, kernel_size=7, stride=2, padding=3)
@@ -112,7 +113,7 @@ class MAIU(Net):
         x = x.view(x.size(0), -1)
         return self.fc_illegal(x).argmax(dim = -1) == 1;
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs):
         x = amps.permute(0, 2, 1, 3)
         x = self.cnn_unit(x)
         x = self.resnet_layers(x)
@@ -134,3 +135,5 @@ class MAIU(Net):
         loss2 = torch.mean(max_term)
         return loss1 + loss2
 
+glb_var.register_model('WIAUId', WIAUId);
+glb_var.register_model('WIAU', WIAU);

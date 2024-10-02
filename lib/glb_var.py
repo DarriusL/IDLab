@@ -34,14 +34,21 @@ sub.py
 '''
 def __init__():
     global glb_dict;
-    glb_dict = {};
+    glb_dict = dict();
+    glb_dict['model'] = {};
 
 def set_values(dict, keys = None, except_type = None):
-    util.set_attr(glb_dict, keys, except_type)
+    util.set_attr(glb_dict, dict, keys = keys, except_type = except_type);
 
 def set_value(key, value):
     #set global var
     glb_dict[key] = value;
+
+def register_model(key, value):
+    glb_dict['model'][key] = value;
+
+def query_model(key):
+    return glb_dict['model'][key] if key in glb_dict['model'].keys() else None;
 
 def get_value(key):
     try:

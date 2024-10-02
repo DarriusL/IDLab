@@ -1,4 +1,5 @@
 import torch
+from lib import glb_var
 from model.framework.base import Net
 
 class CSIID(Net):
@@ -63,6 +64,8 @@ class CSIID(Net):
 
         return x
     
-    def cal_loss(self, amps, ids, envs, is_target_data = False):
+    def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
+
+glb_var.register_model('CSIID', CSIID)

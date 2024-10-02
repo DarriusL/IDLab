@@ -1,36 +1,25 @@
 {
     "seed":2024,
-    "gpu_is_available":true,
+    "gpu_is_available":false,
     "known_p_num":10,
     "known_env_num":2,
     "data":{
         "dataset":"v1",
         "train":{
-            "dir":"data/v1/train.mat",
+            "dir":"data/v1/alltrain.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":64,
-                "drop_last":false,
-                "shuffle":true,
-                "prefetch_factor":4
-            }
-        },
-        "valid":{
-            "dir":"data/v1/valid.mat",
-            "loader":{
-                "num_workers":4, 
-                "pin_memory":true,
-                "batch_size":24,
+                "batch_size":48,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
             }
         },
         "test":{
-            "dir":"data/v1/test_legal.mat",
+            "dir":"data/v1/test.mat",
             "loader":{
-                "num_workers":4, 
+                "num_workers":4,
                 "pin_memory":true,
                 "batch_size":24,
                 "drop_last":false,
@@ -45,14 +34,17 @@
         "valid_start_epoch":20,
         "valid_step":5,
         "stop_train_step_valid_not_improve":6,
-        "valid_metrics":"acc",
-        "valid_metrics_less":false,
+        "valid_metrics":"loss",
+        "valid_metrics_less":true,
         "optimizer":{
             "lr":1e-5,
             "weight_decay":1e-4
         }
     },
     "model":{
-        "name":"maiu_id"
+        "name":"BIRDEncoderSVM",
+        "pretrained_enc_dir":"model/pretrained/bird_encoder_opt2/end",
+        "do":256,
+        "abnormality_rate":0.01
     }
 }

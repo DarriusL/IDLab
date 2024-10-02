@@ -37,7 +37,7 @@ class AE(Net):
         csi_rcst = self.decoder(feature).reshape(amps.shape);
         return csi_rcst;
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False, keep_batch = False):
+    def cal_loss(self, amps, ids, envs, keep_batch = False):
         #amps:[N, T, R, F]
         #ids:[N]
         #envs:[N]
@@ -107,3 +107,6 @@ class CAE(AE):
         feature = self.encoder(amps.permute(0, 2, 1, 3));
         csi_rcst = self.decoder(feature).permute(0, 2, 1, 3);
         return csi_rcst;
+
+glb_var.register_model('AE', AE);
+glb_var.register_model('CAE', CAE);

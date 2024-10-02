@@ -1,5 +1,6 @@
-import argparse, logging, os, torch, platform
-from lib import glb_var, json_util, util
+import argparse, logging, os, torch, platform, subprocess, webbrowser
+from torch.utils.tensorboard import SummaryWriter
+from lib import glb_var, json_util, util, callback, colortext
 
 if __name__ == '__main__':
     glb_var.__init__();
@@ -32,19 +33,33 @@ if __name__ == '__main__':
         config['save_dir'] = save_dir;
     if not os.path.exists(save_dir):
         os.makedirs(save_dir);
-    glb_var.__init__();
     logger = Logger(
         level = INFO_LEVEL,
         filename = f'./cache/logger/{DATASET}/{MODEL_NAME}_{util.get_date()}_{util.get_time()}.log',
     ).get_log();
     logger.debug(f'save dir:{save_dir}');
+    if not os.path.exists(save_dir + 'tb'):
+        os.makedirs(save_dir + 'tb');
     glb_var.set_value('logger', logger);
     if config['gpu_is_available']:
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu');
     else:
         device = torch.device('cpu');
     glb_var.set_value('device', device);
+    tb_writer = SummaryWriter(log_dir = save_dir + 'tb');
+
+    tensorboard_command = ["tensorboard", "--logdir", save_dir + 'tb', "--port", "6006", "--reload_interval", "5"]
+    tb_process = subprocess.Popen(tensorboard_command)
+    try:
+        # 尝试使用 Windows 默认浏览器
+        subprocess.run(["explorer.exe", "http://localhost:6006"])
+    except webbrowser.Error:
+        # 如果失败，则尝试使用系统默认浏览器
+        webbrowser.open("http://localhost:6006")
+    
+    glb_var.set_value('tb_writer', tb_writer);
     util.set_seed(config['seed']);
+    callback.set_custom_tqdm_warning();
 
     from t2 import train, test
     if is_train:
@@ -52,9 +67,17 @@ if __name__ == '__main__':
     if is_test:
         test.test_model(config);
 
+    tb_writer.close();
     if args.auto_shutdown:
-        logger.info('Automatic shutdown.')
+        logger.info('Automatic shutdown.');
+        tb_process.terminate();
         if platform.system().lower() == 'linux':
             os.system("shutdown -h now");
         else:#windows
             os.system("shutdown /s /t 1");
+
+    logger.info("\nTensorBoard is still running.")
+    try:
+        input(colortext.RED + "Press Enter to stop TensorBoard and exit..." + colortext.RESET);
+    finally:
+        tb_process.terminate();

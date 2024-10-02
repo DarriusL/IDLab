@@ -5,6 +5,17 @@
     "known_env_num":2,
     "data":{
         "dataset":"v3",
+        "train":{
+            "dir":"data/v3/support.mat",
+            "loader":{
+                "num_workers":4, 
+                "pin_memory":true,
+                "batch_size":1,
+                "drop_last":false,
+                "shuffle":false,
+                "prefetch_factor":4
+            }
+        },
         "valid":{
             "dir":"data/v3/valid.mat",
             "loader":{
@@ -31,8 +42,6 @@
     "train":{
         "is_DA":false,
         "max_epoch":50,
-        "update_start_epoch":5,
-        "update_step":10,
         "valid_metrics":"loss",
         "valid_metrics_less":true,
         "optimizer":{
@@ -41,8 +50,10 @@
         }
     },
     "model":{
-        "name":"caution",
-        "pretrained_enc_dir":"cache/save/v3/caution_encoder_opt1/model_end.pt",
+        "name":"Caution",
+        "update_start_epoch":5,
+        "update_step":10,
+        "pretrained_enc_dir":"model/pretrained/caution_encoder_opt1/end",
         "initial_threshold":0.5,
         "num_iterations":50, 
         "num_thresholds":20,
