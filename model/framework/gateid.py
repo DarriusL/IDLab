@@ -223,10 +223,6 @@ class GateID(Net):
 
     @torch.no_grad()
     def cal_accuracy(self, amps, ids, envs):
-        #ids:[N]
-        #envs:[N]
-
-            #p
         id_pred = self.p_classify(amps, ids).argmax(dim = -1);
         acc = (id_pred == ids).cpu().float().mean().item();
         return acc;

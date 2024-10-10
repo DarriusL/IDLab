@@ -4,9 +4,9 @@
     "known_p_num":10,
     "known_env_num":2,
     "data":{
-        "dataset":"v2",
+        "dataset":"v4",
         "train":{
-            "dir":"data/v2/train.mat",
+            "dir":"data/v4/train_env1.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
@@ -52,18 +52,7 @@
             }
         },
         "valid":{
-            "dir":"data/v2/valid.mat",
-            "loader":{
-                "num_workers":4, 
-                "pin_memory":true,
-                "batch_size":8,
-                "drop_last":false,
-                "shuffle":true,
-                "prefetch_factor":4
-            }
-        },
-        "target":{
-            "dir":"data/v2/target.mat",
+            "dir":"data/v4/valid_env1.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
@@ -74,7 +63,7 @@
             }
         },
         "test":{
-            "dir":"data/v2/test_legal.mat",
+            "dir":"data/v4/test_env1.mat",
             "loader":{
                 "num_workers":4,
                 "pin_memory":true,
@@ -86,7 +75,7 @@
         }
     },
     "train":{
-        "is_DA":true,
+        "is_DA":false,
         "max_epoch":300,
         "valid_start_epoch":5,
         "valid_step":1,
@@ -161,6 +150,6 @@
             "drop_out":0.5,
             "end_with_softmax":true
         },
-        "lambda_":1
+        "lambda_":-1
     }
 }
