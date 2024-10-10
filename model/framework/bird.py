@@ -140,11 +140,12 @@ class BIRDEncoder(Net):
         feature = self.encoder(amps);
         id_probs = self.p_classifier(feature);
         id_loss = torch.nn.CrossEntropyLoss()(id_probs, ids);
+        if amps_t is None:
+            #input is from target domin
+            return id_loss;
         env_probs = self.env_classifier(net_util.GradientReversalF.apply(feature, self.lambda_));
         env_loss = torch.nn.CrossEntropyLoss()(env_probs, envs);
         src_loss = id_loss + env_loss;
-        if amps_t is None:
-            return src_loss;
         feature_t = self.encoder(amps_t);
         id_probs_t = self.p_classifier(feature_t);
         id_loss_t = torch.nn.CrossEntropyLoss()(id_probs_t, ids_t);
