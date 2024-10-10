@@ -224,7 +224,7 @@ class BIRD(Net):
         csi_rcst = self.Tlinear2(feature5.permute(0, 2, 3, 1)).permute(0, 3, 1, 2);
         return csi_rcst;
 
-    def cal_loss(self, amps, ids, envs, is_target_data = False, keep_batch = False):
+    def cal_loss(self, amps, ids, envs, keep_batch = False):
         #amps:[N, T, R, F]
         #ids:[N]
         #envs:[N]

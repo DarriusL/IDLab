@@ -132,7 +132,6 @@ class DLBaseTrainer(object):
         valid_cnt = 0;
         for epoch in range(self.max_epoch):
             epoch_train_loss, epoch_train_acc = self._train_step(epoch);
-            #TODO: Add check point of TensorBoard
             tb_writer.add_scalar('Train loss', epoch_train_loss, epoch);
             self.train_loss.append(epoch_train_loss);
             tb_writer.add_scalar('Train acc', epoch_train_acc, epoch);
@@ -144,7 +143,6 @@ class DLBaseTrainer(object):
             if (epoch + 1) >= self.valid_start_epoch and (epoch + 1) % self.valid_step == 0:
                 self._clear_cache();
                 epoch_valid_loss, epoch_valid_acc = self._valid_step(epoch);
-                #TODO: Add check point of TensorBoard
                 self.valid_loss.append(epoch_valid_loss);
                 self.valid_acc.append(epoch_valid_acc);
                 if self.valid_metrics.lower() == 'loss':
@@ -221,6 +219,41 @@ class CautionEncTrainer(DLBaseTrainer):
     def _after_train_epoch_hook(self, epoch):
         if epoch == 0 or self.train_acc[-1] >= np.max(self.train_acc[:-1]):
             self._save(self.save_dir + 'best/');
+
+class DCSGaitTrainer(DATrainer):
+    def __init__(self, config) -> None:
+        util.set_attr(self, config['train']);
+
+        self.valid_loader, info = data_wrapper(deepcopy(config), 'valid');
+        #[N, T, R, F]
+        config['model']['dim_in'] = info;
+
+        config['model']['known_p_num'] = config['known_p_num'];
+        config['model']['known_env_num'] = config['known_env_num'];
+        self.config = config;
+        self.save_dir = config['save_dir'];
+
+        #generalte model
+        model = generate_model(deepcopy(config['model']));
+        self.model = model;
+        self._generate_loader();
+        self._init_optimizer();
+        self._init_scheduler();
+
+    @torch.no_grad()
+    def _generate_loader(self):
+        from data.wrapper import data_wrapper_from_data
+        amps_s, ids_s, envs_s, _ = data_wrapper(deepcopy(self.config), 'train', load_origin = True);
+        amps_t, _, envs_t, _ = data_wrapper(deepcopy(self.config), 'target', load_origin = True);
+
+        self.model.to(torch.device('cpu'));
+        amps_s, ids_s, amps_t, ids_t = self.model.generate_src_and_tgt(amps_s, ids_s, amps_t);
+        envs = torch.cat((envs_s,envs_t), dim = 0);
+        self.model.to(device);
+
+        self.train_loader, _ = data_wrapper_from_data(amps_s, ids_s, envs, deepcopy(self.config), 'train');
+        del amps_s, ids_s
+        self.target_loader, _ = data_wrapper_from_data(amps_t, ids_t, envs, deepcopy(self.config), 'target');
         
 class ConventionalTrainer(object):
     def __init__(self, config) -> None:
@@ -271,6 +304,8 @@ def generate_trainer(config):
         return None;
     elif config['model']['name'] in ['BIRDEncoderSVM']:
         return ConventionalTrainer(config);
+    elif config['model']['name'] == 'DCSGait':
+        return DCSGaitTrainer(config);
 
     if config['train']['is_DA']:
         trainer = DATrainer(config);

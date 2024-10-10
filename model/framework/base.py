@@ -58,6 +58,11 @@ class Net(torch.nn.Module):
             acc = (intrude_gt == intrude_pred).cpu().float().mean().item();
         return acc;
 
+    def p_classify(self, amps):
+        '''Defines the id classiify part of the network. Must be implemented by subclasses.'''
+        logger.error('Method needs to be called after being implemented');
+        raise NotImplementedError;
+
     def train_epoch_hook(self, trainer, epoch):
         '''Hook for executing custom logic during each training epoch.'''
         pass

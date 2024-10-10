@@ -17,7 +17,6 @@ class generaldataset(torch.utils.data.Dataset):
             self.getitem_func = self.v3_getitem;
         else:
             raise RuntimeError;
-        
 
     def __len__(self) -> int:
         return self.n;
@@ -65,7 +64,7 @@ class loader_wrapper():
             yield (data.to(device) for data in batch);
 
 @decorator.Timer
-def v1_wrapper(config:dict, mode):
+def v1_wrapper(config:dict, mode, load_origin = False):
     datadir = config['data'][mode]['dir'];
     data = h5py.File(datadir, 'r');
     data_dict = {};
@@ -87,10 +86,12 @@ def v1_wrapper(config:dict, mode):
     else:
         loader_param['num_workers'] = 0;
         loader_param['prefetch_factor'] = None;
+    info = data_dict['amps'][:config['data'][mode]['loader']['batch_size'], :].shape;
+    if load_origin:
+        return data_dict['amps'], data_dict['ids'], data_dict['envs'], info
     loader_param['dataset'] = generaldataset(data_dict);
     aug_cfg = config['data'][mode]['augmentation'] if 'augmentation' in config['data'][mode].keys() else None;
     loader = loader_wrapper(torch.utils.data.DataLoader(**loader_param), aug_cfg);
-    info = data_dict['amps'][:config['data'][mode]['loader']['batch_size'], :].shape;
     return (loader, info)
 
 @decorator.Timer
@@ -125,12 +126,36 @@ def v3_warapper(config:dict, mode):
     loader = loader_wrapper(torch.utils.data.DataLoader(**loader_param), aug_cfg);
     return (loader, None)
 
+def data_wrapper_from_data(amps, ids, envs, config, mode):
+    assert amps.shape[0] == ids.shape[0]
+    assert  ids.shape[0] == envs.shape[0]
+    data_dict = dict();
+    data_dict['mode'] = 'v1';
+    data_dict['n'] = ids.shape[0];
+    data_dict['amps'] = amps.float();
+    data_dict['ids'] = ids.to(torch.int64);
+    data_dict['envs'] = envs.to(torch.int64);
+
+    loader_param = config['data'][mode]['loader'];
+    if platform.system().lower() == 'linux':
+        pass
+    else:
+        loader_param['num_workers'] = 0;
+        loader_param['prefetch_factor'] = None;
+
+    loader_param['dataset'] = generaldataset(data_dict);
+    aug_cfg = config['data'][mode]['augmentation'] if 'augmentation' in config['data'][mode].keys() else None;
+    loader = loader_wrapper(torch.utils.data.DataLoader(**loader_param), aug_cfg);
+    info = data_dict['amps'][:config['data'][mode]['loader']['batch_size'], :].shape;
+    return (loader, info)
 
 
-def data_wrapper(config:dict, mode):
+def data_wrapper(config:dict, mode, load_origin = False):
     if config['data']['dataset'] in ['v1', 'v2', 'v4']:
-        rets = v1_wrapper(config, mode);
+        rets = v1_wrapper(config, mode, load_origin);
     elif config['data']['dataset'] in ['v3']:
+        if load_origin:
+            raise RuntimeError('V3 does not support the parameter load_origin=True');
         rets = v3_warapper(config, mode);
     else:
         raise RuntimeError

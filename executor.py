@@ -51,10 +51,8 @@ if __name__ == '__main__':
     tensorboard_command = ["tensorboard", "--logdir", save_dir + 'tb', "--port", "6006", "--reload_interval", "5"]
     tb_process = subprocess.Popen(tensorboard_command)
     try:
-        # 尝试使用 Windows 默认浏览器
         subprocess.run(["explorer.exe", "http://localhost:6006"])
     except webbrowser.Error:
-        # 如果失败，则尝试使用系统默认浏览器
         webbrowser.open("http://localhost:6006")
     
     glb_var.set_value('tb_writer', tb_writer);
@@ -62,10 +60,13 @@ if __name__ == '__main__':
     callback.set_custom_tqdm_warning();
 
     from t2 import train, test
-    if is_train:
-        config = train.train_model(config);
-    if is_test:
-        test.test_model(config);
+    try:
+        if is_train:
+            config = train.train_model(config);
+        if is_test:
+            test.test_model(config);
+    except KeyboardInterrupt:
+        logger.info(colortext.YELLOW + "Exiting program..." + colortext.RESET)
 
     tb_writer.close();
     if args.auto_shutdown:
