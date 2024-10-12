@@ -44,11 +44,10 @@ class Tester():
         with torch.no_grad():
             for amps, ids, envs in tqdm.tqdm(self.test_loader, desc=f"[Test progress]", unit="batch", leave=False, file=sys.stdout):
                 with callback.no_stdout():
-                #for amps, ids, envs in iter(self.test_loader):
                     test_acc.append(model.cal_accuracy(amps, ids, envs));
         test_acc_all = np.mean(test_acc);
         logger.info(f'[{model.name}]-[test({info})]-[{str_model}]- \nAccuracy [{ACC_NAME}]:'+ colortext.RED + 
-                    f'{test_acc_all * 100:.4f}%' + colortext.RESET);
+                    f'{test_acc_all * 100:.4f}%\n' + colortext.RESET);
         return test_acc_all;
 
     def _general_test(self):
@@ -61,22 +60,6 @@ class Tester():
         result['end model']['acc'] = self._calculate(self.end_model, 'end model');
         result['best model']['acc'] = self._calculate(self.best_model, 'best model');
         json_util.jsonsave(result, save_dir + 'result.json');
-
-        if os.path.exists(save_dir + 'ep.pkl'):
-            from matplotlib import pyplot as plt
-            import pickle
-            with open(save_dir + 'ep.pkl', 'rb') as f:
-                ep = pickle.load(f)
-
-            with open(save_dir + 'fig_acc.pkl', 'rb') as f:
-                fig_acc = pickle.load(f);
-            plt.figure(fig_acc);
-            plt.plot(ep, result['end model']['acc'] * np.ones_like(ep), label = f'test acc - end model');
-            plt.plot(ep, result['best model']['acc'] * np.ones_like(ep), label = f'test acc - best model');
-            plt.xlabel('epoch');
-            plt.ylabel('loss');
-            plt.legend(loc='upper right')
-            plt.savefig(save_dir + 'test_acc.png', dpi = 400);
 
         logger.info(f'Saving dir:{save_dir}');
     

@@ -61,7 +61,7 @@ class DLBaseTrainer(object):
 
     def _log_epoch_info(self, epoch, loss, acc, t_train_start, is_train, valid_cnt = None):
         ACC_NAME = 'Intrusion' if self.model.is_Intrusion_Detection  else 'Identification';
-        acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {acc[-1] * 100 :.6f} %\n';
+        acc_info = '' if self.valid_metrics.lower() == 'loss' else f'Accuracy {ACC_NAME}: {acc[-1] * 100 :.6f} % / {np.max(acc) * 100 :.6f} %\n';
         time_info = f'Accumulated training time:[{util.s2hms(time.time() - t_train_start)}]\n' + \
                     'Estimated time remaining:[' + colortext.YELLOW + \
                     f'{util.s2hms((time.time() - t_train_start)/(epoch + 1) * (self.max_epoch - epoch - 1))}' + colortext.RESET + ']\n';
@@ -73,7 +73,7 @@ class DLBaseTrainer(object):
         else:#valid
             logger.info(f'[{self.model.name}]-['+ colortext.PURPLE +'valid' + colortext.RESET +f']-[metrics: {self.valid_metrics.lower()}]\n'
                     f'[epoch: {epoch + 1}/{self.max_epoch}] \n'
-                    f'valid loss:{loss[-1]:.8f} / {np.min(loss):.8f} (best)\n' +
+                    f'valid loss:{loss[-1]:.8f} / {np.min(loss):.8f}\n' +
                     acc_info +
                     colortext.GREEN + f'valid_not_imporove_cnt: {valid_cnt}\n' + colortext.RESET + time_info);
 
@@ -124,49 +124,52 @@ class DLBaseTrainer(object):
         pass
 
     def train(self):
-        t_train_start = time.time();
-        self.train_loss, self.valid_loss = [], [];
-        self.train_acc, self.valid_acc = [], [];
-        valid_best = np.inf if self.valid_metrics_less else -np.inf;
-        valid_cur = None;
-        valid_cnt = 0;
-        for epoch in range(self.max_epoch):
-            epoch_train_loss, epoch_train_acc = self._train_step(epoch);
-            tb_writer.add_scalar('Train loss', epoch_train_loss, epoch);
-            self.train_loss.append(epoch_train_loss);
-            tb_writer.add_scalar('Train acc', epoch_train_acc, epoch);
-            self.train_acc.append(epoch_train_acc);
-            self._log_epoch_info(epoch, self.train_loss, self.train_acc, t_train_start, is_train = True);
-            self.scheduler.step();
-            self._after_train_epoch_hook(epoch);
+        try:
+            t_train_start = time.time();
+            self.train_loss, self.valid_loss = [], [];
+            self.train_acc, self.valid_acc = [], [];
+            valid_best = np.inf if self.valid_metrics_less else -np.inf;
+            valid_cur = None;
+            valid_cnt = 0;
+            for epoch in range(self.max_epoch):
+                epoch_train_loss, epoch_train_acc = self._train_step(epoch);
+                tb_writer.add_scalar('Train loss', epoch_train_loss, epoch);
+                self.train_loss.append(epoch_train_loss);
+                tb_writer.add_scalar('Train acc', epoch_train_acc, epoch);
+                self.train_acc.append(epoch_train_acc);
+                self._log_epoch_info(epoch, self.train_loss, self.train_acc, t_train_start, is_train = True);
+                self.scheduler.step();
+                self._after_train_epoch_hook(epoch);
 
-            if (epoch + 1) >= self.valid_start_epoch and (epoch + 1) % self.valid_step == 0:
-                self._clear_cache();
-                epoch_valid_loss, epoch_valid_acc = self._valid_step(epoch);
-                self.valid_loss.append(epoch_valid_loss);
-                self.valid_acc.append(epoch_valid_acc);
-                if self.valid_metrics.lower() == 'loss':
-                    valid_cur = self.valid_loss[-1];
-                    tb_writer.add_scalar('Valid loss', epoch_valid_loss, epoch);
-                elif self.valid_metrics.lower() == 'acc':
-                    valid_cur = self.valid_acc[-1];
-                    tb_writer.add_scalar('Valid acc', epoch_valid_acc, epoch);
-                else:
-                    raise RuntimeError;
-                comparison = (valid_cur <= valid_best) if self.valid_metrics_less else (valid_cur >= valid_best);
-                if comparison:
-                    valid_best = valid_cur;
-                    valid_cnt = 0;
-                    self._save(self.save_dir + 'best/');
-                else:
-                    valid_cnt += 1;
-                self._log_epoch_info(epoch, self.valid_loss, self.valid_acc, t_train_start, is_train = False, valid_cnt = valid_cnt);
-                if valid_cnt >= self.stop_train_step_valid_not_improve:
-                    logger.info('Reaching the set stop condition')
-                    break;
+                if (epoch + 1) >= self.valid_start_epoch and (epoch + 1) % self.valid_step == 0:
+                    self._clear_cache();
+                    epoch_valid_loss, epoch_valid_acc = self._valid_step(epoch);
+                    self.valid_loss.append(epoch_valid_loss);
+                    self.valid_acc.append(epoch_valid_acc);
+                    if self.valid_metrics.lower() == 'loss':
+                        valid_cur = self.valid_loss[-1];
+                        tb_writer.add_scalar('Valid loss', epoch_valid_loss, epoch);
+                    elif self.valid_metrics.lower() == 'acc':
+                        valid_cur = self.valid_acc[-1];
+                        tb_writer.add_scalar('Valid acc', epoch_valid_acc, epoch);
+                    else:
+                        raise RuntimeError;
+                    comparison = (valid_cur <= valid_best) if self.valid_metrics_less else (valid_cur >= valid_best);
+                    if comparison:
+                        valid_best = valid_cur;
+                        valid_cnt = 0;
+                        self._save(self.save_dir + 'best/');
+                    else:
+                        valid_cnt += 1;
+                    self._log_epoch_info(epoch, self.valid_loss, self.valid_acc, t_train_start, is_train = False, valid_cnt = valid_cnt);
+                    if valid_cnt >= self.stop_train_step_valid_not_improve:
+                        logger.info('Reaching the set stop condition')
+                        break;
+        except KeyboardInterrupt:
+            logger.info(colortext.YELLOW + "Exiting training..." + colortext.RESET)
+
         self._save(self.save_dir + 'end/');
         json_util.jsonsave(self.config, self.save_dir + 'config.json');
-        #no more plot
 
 class DATrainer(DLBaseTrainer):
     def __init__(self, config) -> None:
@@ -236,6 +239,7 @@ class DCSGaitTrainer(DATrainer):
         #generalte model
         model = generate_model(deepcopy(config['model']));
         self.model = model;
+        self.model.is_DA = True;
         self._generate_loader();
         self._init_optimizer();
         self._init_scheduler();
@@ -278,19 +282,22 @@ class ConventionalTrainer(object):
 
     @torch.no_grad()
     def train(self):
-        X = torch.zeros((0, self.model.do), device = device);
-        Y = torch.zeros((0), device = device, dtype = torch.int64);
+        # X = torch.zeros((0, self.model.do), device = device);
+        # Y = torch.zeros((0), device = device, dtype = torch.int64);
+        X, Y = [], [];
         for amps, ids, envs in tqdm.tqdm(self.train_loader, desc=f"Generating training data for {self.model.name}", unit="batch", leave=False, file=sys.stdout):
             with callback.no_stdout():
-                X = torch.cat((
-                    X, 
-                    self.model.encoder(amps)
-                    ), dim = 0);
+                # X = torch.cat((
+                #     X, 
+                #     self.model.encoder(amps)
+                #     ), dim = 0);
+                X.append(self.model.encoder(amps));
                 #if is Intrusion Detection, 1 for illegel, 0 for legal
                 _Y = ids if not self.model.is_Intrusion_Detection else (ids >= self.model.known_p_num).to(torch.int64);
-                Y = torch.cat((Y, _Y), dim = 0);
-        X = X.cpu().detach().numpy();
-        Y = Y.cpu().detach().numpy();
+                # Y = torch.cat((Y, _Y), dim = 0);
+                Y.append(_Y);
+        X = torch.cat(X, dim = 0).cpu().detach().numpy();
+        Y = torch.cat(Y, dim = 0).cpu().detach().numpy();
         self.model.conventional_train(X, Y);
         self._save(self.save_dir + 'best/');
         self._save(self.save_dir + 'end/');

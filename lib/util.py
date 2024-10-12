@@ -1,7 +1,7 @@
 # @Time   : 2022.03.03
 # @Author : Darrius Lei
 # @Email  : darrius.lei@outlook.com
-import os, importlib
+import os, importlib, platform, subprocess, signal
 import pydash as ps
 import datetime, time, inspect
 from matplotlib import pyplot as plt
@@ -119,3 +119,37 @@ def load_modules_from_directory(directory, package):
         if filename.endswith(".py") and filename != "__init__.py":
             module_name = filename[:-3]
             importlib.import_module(f"{package}.{module_name}")
+
+def is_wsl():
+    if platform.system().lower() == 'linux':
+        with open('/proc/version', 'r') as f:
+            version_info = f.read().lower()
+            return 'microsoft' in version_info
+    return False
+
+def kill_process_on_port(port):
+    from lib import glb_var, colortext
+    logger = glb_var.get_value('logger');
+    try:
+        if platform.system().lower() == 'linux':
+            # Linux: lsof
+            logger.info(f"Checking for process on port {port} (Linux)");
+            result = subprocess.check_output(f"lsof -i:{port} -t", shell=True);
+            pid = int(result.strip());
+            logger.info(colortext.YELLOW + f"Terminating process {pid}, which is occupying port {port}" + colortext.RESET);
+            os.kill(pid, signal.SIGTERM);
+        elif platform.system().lower() == 'windows':
+            # Windows: netstat
+            logger.info(f"Checking for process on port {port} (Windows)");
+            result = subprocess.check_output(f"netstat -ano | findstr :{port}", shell=True);
+            lines = result.decode().strip().split("\n");
+            for line in lines:
+                pid = int(line.strip().split()[-1]);
+                logger.info(colortext.YELLOW + f"Terminating process {pid}, which is occupying port {port}" + colortext.RESET);
+                subprocess.call(f"taskkill /F /PID {pid}", shell=True);
+        else:
+            logger.error(f"Unsupported platform: {platform.system()}");
+    except subprocess.CalledProcessError:
+        logger.info(f"No process is occupying port {port}");
+    except Exception as e:
+        logger.error(f"An error occurred while trying to kill the process on port {port}: {e}");

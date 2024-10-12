@@ -1,4 +1,4 @@
-import argparse, logging, os, torch, platform, subprocess, webbrowser
+import argparse, logging, os, torch, platform, subprocess, webbrowser, time
 from torch.utils.tensorboard import SummaryWriter
 from lib import glb_var, json_util, util, callback, colortext
 
@@ -46,10 +46,11 @@ if __name__ == '__main__':
     else:
         device = torch.device('cpu');
     glb_var.set_value('device', device);
+    util.kill_process_on_port(6006);
     tb_writer = SummaryWriter(log_dir = save_dir + 'tb');
 
-    tensorboard_command = ["tensorboard", "--logdir", save_dir + 'tb', "--port", "6006", "--reload_interval", "5"]
-    tb_process = subprocess.Popen(tensorboard_command)
+    tb_process = subprocess.Popen(["tensorboard", "--logdir", save_dir + 'tb', "--port", "6006", "--reload_interval", "5"])
+    time.sleep(5);
     try:
         subprocess.run(["explorer.exe", "http://localhost:6006"])
     except webbrowser.Error:
@@ -72,8 +73,10 @@ if __name__ == '__main__':
     if args.auto_shutdown:
         logger.info('Automatic shutdown.');
         tb_process.terminate();
-        if platform.system().lower() == 'linux':
+        if platform.system().lower() == 'linux' and not util.is_wsl():
             os.system("shutdown -h now");
+        elif util.is_wsl() :
+            os.system("/mnt/c/Windows/System32/cmd.exe /c shutdown /s /t 1")
         else:#windows
             os.system("shutdown /s /t 1");
 

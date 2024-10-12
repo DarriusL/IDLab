@@ -1,7 +1,7 @@
 #Bi-Stage Identity Recognition and Intrusion Detection
-import torch, sklearn.svm, sklearn.preprocessing,joblib
+import torch, sklearn.svm, sklearn.preprocessing, joblib, tqdm, sys
 import numpy as np
-from lib import util, glb_var
+from lib import util, glb_var, callback
 from model import net_util
 from model.framework.base import Net
 from model import attnet
@@ -48,7 +48,7 @@ class RefineNet(torch.nn.Module):
         self.net = torch.nn.Sequential(*layers);
 
     def forward(self, input):
-        #input:[N, 1, t, d]
+        #input:[N, c, t, d]
         return input + self.net(input);
 
 class CSINet(torch.nn.Module):
@@ -60,9 +60,9 @@ class CSINet(torch.nn.Module):
         self.net = torch.nn.Sequential(*layers);
 
     def forward(self, input):
-        #input:[N, t, 1, d] -> [N, 1, t, d]
-        #output:[N, 1, t, d] -> [N, t, d]
-        return self.net(input.permute(0, 2, 1, 3)).squeeze(1);
+        #input:[N, r(c), t, d]
+        #output:[N, c, t, d]
+        return self.net(input);
 
 class BIRDEncoder(Net):
     def __init__(self, model_cfg):
@@ -121,7 +121,7 @@ class BIRDEncoder(Net):
         #amps2:[N, d, R, t] -> [N, t, R, d]
         amps2 = self.Tlinear(amps1).permute(0, 3, 2, 1);
         #([N, t, d], [N, t, d], [N, t, d])
-        aa1 = tuple([self.csinets[i](amps2[:, :, [i], :]) for i in range(self.dim_in[2])]);
+        aa1 = tuple([self.csinets[i](amps2[:, :, [i], :].permute(0, 2, 1, 3)).squeeze(1) for i in range(self.dim_in[2])]);
         #[N, t*3, d]
         te1 = torch.cat(aa1, dim = 1);
         #[N, t*3, d]
@@ -141,7 +141,7 @@ class BIRDEncoder(Net):
         id_probs = self.p_classifier(feature);
         id_loss = torch.nn.CrossEntropyLoss()(id_probs, ids);
         if amps_t is None:
-            #input is from target domin
+            #input is from target domin or all data from one domin()
             return id_loss;
         env_probs = self.env_classifier(net_util.GradientReversalF.apply(feature, self.lambda_));
         env_loss = torch.nn.CrossEntropyLoss()(env_probs, envs);
@@ -238,12 +238,12 @@ class BIRD(Net):
         self.thresholds = dict();
         loader.disable_aug();
         self.eval();
-        rcst_errors = torch.zeros(0, device = device);
-        for amps, ids, envs in iter(loader):
-            rcst_errors = torch.cat((
-                rcst_errors,
-                self.cal_loss(amps, ids, envs, keep_batch = True)
-            ));
+        rcst_errors = [];
+        for amps, ids, envs in tqdm.tqdm(loader, desc=f"[Updating threshold]", unit="batch", leave=False, file=sys.stdout):
+            with callback.no_stdout():
+                rcst_errors.append(self.cal_loss(amps, ids, envs, keep_batch = True));
+        rcst_errors = torch.cat(rcst_errors, dim = 0);
+
         for percent in self.threshold_percents:
             self.thresholds[percent] = np.percentile(rcst_errors.cpu(), percent)
             logger.debug(f'Updated threshold({percent:.2f}%): {self.threshold}');

@@ -10,7 +10,7 @@
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":48,
+                "batch_size":96,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
@@ -42,9 +42,9 @@
     "train":{
         "is_DA":false,
         "max_epoch":100,
-        "valid_start_epoch":20,
-        "valid_step":5,
-        "stop_train_step_valid_not_improve":6,
+        "valid_start_epoch":5,
+        "valid_step":1,
+        "stop_train_step_valid_not_improve":30,
         "valid_metrics":"loss",
         "valid_metrics_less":true,
         "optimizer":{
@@ -54,7 +54,7 @@
     },
     "model":{
         "name":"BIRD",
-        "pretrained_enc_dir":"model/pretrained/bird_encoder_opt2/end",
+        "pretrained_enc_dir":"model/pretrained/BIRDEncoder_opt4/end",
         "loss":"mse",
         "do":256,
         "d":16,
