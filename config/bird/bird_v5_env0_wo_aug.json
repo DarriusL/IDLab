@@ -1,8 +1,8 @@
 {
     "seed":2024,
     "gpu_is_available":true,
-    "known_p_num":10,
-    "known_env_num":2,
+    "known_p_num":9,
+    "known_env_num":1,
     "data":{
         "dataset":"v5",
         "train":{
