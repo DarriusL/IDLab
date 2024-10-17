@@ -151,14 +151,8 @@ def data_wrapper_from_data(amps, ids, envs, config, mode):
 
 
 def data_wrapper(config:dict, mode, load_origin = False):
-    if config['data']['dataset'] in ['v1', 'v2', 'v4']:
-        rets = v1_wrapper(config, mode, load_origin);
-    elif config['data']['dataset'] in ['v3']:
-        if load_origin:
-            raise RuntimeError('V3 does not support the parameter load_origin=True');
-        rets = v3_warapper(config, mode);
-    else:
-        raise RuntimeError
-    
+    if config['model']['name'] in ['Caution', 'CautionEncoder']:
+        return v3_warapper(config, mode);
+    rets = v1_wrapper(config, mode, load_origin);
     return rets;
 
