@@ -16,25 +16,28 @@ class AE(Net):
         encoder_cfg['activation_fn'] = net_util.get_activation_fn(encoder_cfg['activation_fn']);
         encoder_cfg['dim_in'] = np.prod(self.dim_in[1:]);
         encoder_cfg['dim_out'] = self.do;
-        self.encoder = util.get_func_rets(net_util.get_mlp_net, encoder_cfg);
+        self.encnet = util.get_func_rets(net_util.get_mlp_net, encoder_cfg);
 
         #decoder
         decoder_cfg = model_cfg['decoder_cfg'];
         decoder_cfg['activation_fn'] = net_util.get_activation_fn(decoder_cfg['activation_fn']);
         decoder_cfg['dim_in'] = self.do;
         decoder_cfg['dim_out'] = np.prod(self.dim_in[1:]);
-        self.decoder = util.get_func_rets(net_util.get_mlp_net, decoder_cfg);
+        self.decnet = util.get_func_rets(net_util.get_mlp_net, decoder_cfg);
 
         self.loss_func = net_util.get_loss_func(model_cfg['loss']);
         self.threshold = .0;
         self.thresholds = dict();
 
         self.is_Intrusion_Detection = True;
+    
+    def encoder(self, amps):
+        return self.encnet(amps.flatten(1, -1));
 
     def reconstruct(self, amps):
         #amps[B, T, R, F]
-        feature = self.encoder(amps.flatten(1, -1));
-        csi_rcst = self.decoder(feature).reshape(amps.shape);
+        feature = self.encoder(amps);
+        csi_rcst = self.decnet(feature).reshape(amps.shape);
         return csi_rcst;
 
     def cal_loss(self, amps, ids, envs, keep_batch = False):
@@ -78,7 +81,7 @@ class CAE(AE):
 
         #encoder
         layers = [self.dim_in[2]] + model_cfg['encoder_hid_layers'];
-        self.encoder = torch.nn.Sequential(*[
+        self.encnet = torch.nn.Sequential(*[
             torch.nn.Sequential(
                 torch.nn.Conv2d(layers[i], layers[i + 1], kernel_size = 3, stride = 2, padding = 1),
                 torch.nn.ReLU()
@@ -88,7 +91,7 @@ class CAE(AE):
 
         #decoder
         layers = model_cfg['decoder_hid_layers'] + [self.dim_in[2]];
-        self.decoder = torch.nn.Sequential(*[
+        self.decnet = torch.nn.Sequential(*[
             torch.nn.Sequential(
                 torch.nn.ConvTranspose2d(layers[i], layers[i + 1], kernel_size=3, stride=2, padding=1, output_padding=(1, 1)),
                 torch.nn.Sigmoid() if i + 2 == len(layers) else torch.nn.ReLU()
@@ -102,10 +105,13 @@ class CAE(AE):
 
         self.is_Intrusion_Detection = True;
 
+    def encoder(self, amps):
+        return self.encnet(amps.permute(0, 2, 1, 3));
+
     def reconstruct(self, amps):
         #amps[B, T, R, F]
-        feature = self.encoder(amps.permute(0, 2, 1, 3));
-        csi_rcst = self.decoder(feature).permute(0, 2, 1, 3);
+        feature = self.encoder(amps);
+        csi_rcst = self.decnet(feature).permute(0, 2, 1, 3);
         return csi_rcst;
 
 glb_var.register_model('AE', AE);
