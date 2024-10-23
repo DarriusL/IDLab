@@ -234,7 +234,7 @@ class BIRD(Net):
         return loss;
 
     @torch.no_grad()
-    def update_thresholds(self, loader):
+    def update_thresholds(self, loader, threshold_percents):
         self.thresholds = dict();
         loader.disable_aug();
         self.eval();
@@ -244,7 +244,7 @@ class BIRD(Net):
                 rcst_errors.append(self.cal_loss(amps, ids, envs, keep_batch = True));
         rcst_errors = torch.cat(rcst_errors, dim = 0);
 
-        for percent in self.threshold_percents:
+        for percent in threshold_percents:
             self.thresholds[percent] = np.percentile(rcst_errors.cpu(), percent)
             logger.debug(f'Updated threshold({percent:.2f}%): {self.threshold}');
     

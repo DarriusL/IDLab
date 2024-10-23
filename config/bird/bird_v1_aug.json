@@ -142,14 +142,6 @@
             "activation_fn":"mish",
             "drop_out":0.5,
             "end_with_softmax":false
-        },
-        "threshold_percents":[
-            85,
-            90,
-            92,
-            95,
-            97,
-            99
-        ]
+        }
     }
 }

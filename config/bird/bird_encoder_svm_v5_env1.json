@@ -1,34 +1,23 @@
 {
     "seed":2024,
-    "gpu_is_available":true,
+    "gpu_is_available":false,
     "known_p_num":9,
     "known_env_num":1,
     "data":{
         "dataset":"v5",
         "train":{
-            "dir":"data/v5/train_env1.mat",
+            "dir":"data/v5/train_env0.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
-                "batch_size":8,
-                "drop_last":false,
-                "shuffle":true,
-                "prefetch_factor":4
-            }
-        },
-        "valid":{
-            "dir":"data/v5/valid_env1.mat",
-            "loader":{
-                "num_workers":4, 
-                "pin_memory":true,
-                "batch_size":16,
+                "batch_size":48,
                 "drop_last":false,
                 "shuffle":true,
                 "prefetch_factor":4
             }
         },
         "test":{
-            "dir":"data/v5/test_env1.mat",
+            "dir":"data/v5/test_env0.mat",
             "loader":{
                 "num_workers":4,
                 "pin_memory":true,
@@ -53,17 +42,9 @@
         }
     },
     "model":{
-        "name":"CAE",
-        "loss":"nmse",
-        "encoder_hid_layers":[
-            128,
-            1024,
-            1024
-        ],
-        "decoder_hid_layers":[
-            1024,
-            1024,
-            128
-        ]
+        "name":"BIRDEncoderSVM",
+        "pretrained_enc_dir":"model/pretrained/BIRDEncoder_v5_env0_opt1/end",
+        "do":256,
+        "abnormality_rate":0.3
     }
 }

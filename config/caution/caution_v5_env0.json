@@ -53,10 +53,10 @@
         "name":"Caution",
         "update_start_epoch":5,
         "update_step":10,
-        "pretrained_enc_dir":"model/pretrained/caution_encoder_opt1/end",
-        "initial_threshold":0.5,
-        "num_iterations":50, 
-        "num_thresholds":20,
-        "threshold_step":0.05
+        "pretrained_enc_dir":"model/pretrained/CautionEncoder_v5_env0_opt1/end",
+        "initial_threshold":0.75,
+        "num_iterations":100, 
+        "num_thresholds":200,
+        "threshold_step":0.001
     }
 }

@@ -31,8 +31,7 @@ class Tester():
 
         if self.best_model.name in ['BIRD', 'AE', 'CAE']:
             self.test_func = self._ae_test;
-            self.best_model.threshold_percents = config['model']['threshold_percents'];
-            self.end_model.threshold_percents = config['model']['threshold_percents'];
+            self.model_threshold_percents = list(range(1, 101));
         else:
             self.test_func = self._general_test;
     
@@ -71,25 +70,42 @@ class Tester():
         self.end_model.pre_test_hook(self);
         logger.info('Load train loader to update threshold');
         train_loader, _ = data_wrapper(deepcopy(self.config), 'train');
-        self.best_model.update_thresholds(train_loader);
-        self.end_model.update_thresholds(train_loader);
+        self.best_model.update_thresholds(train_loader, self.model_threshold_percents);
+        self.end_model.update_thresholds(train_loader, self.model_threshold_percents);
         del train_loader;
     
         save_dir =  self.config['save_dir'];
         result = {'end model':[], 'best model':[]};
     
-        for idx in range(len(self.best_model.threshold_percents)):
-            percent = self.best_model.threshold_percents[idx];
+        # for idx in range(len(self.best_model.threshold_percents)):
+        for percent in self.model_threshold_percents:
             info = f'{percent}%-threshold';
             _step(self.best_model, percent, 'best model', info);
             _step(self.end_model, percent, 'end model', info);
 
+
         #show result
         table = PrettyTable();
-        table.add_column('threshold_percent', self.best_model.threshold_percents);
+        table.add_column('threshold_percent', self.model_threshold_percents);
         table.add_column('best model', result['best model']);
         table.add_column('end model', result['end model']);
-        for row in table._rows:
+
+        recs = dict();
+        model_map = {1: 'best model result', 2: 'end model result'};
+        result_to_save = {'end model':{}, 'best model':{}};
+        for i in range(len(table.field_names)):
+            column_data = [row[i] for row in table._rows]
+            if i != 0:
+                max_idx = np.argmax(column_data);
+                recs[i] = max_idx;
+                result_to_save[model_map[i]] = {
+                    "percent": self.model_threshold_percents[max_idx],
+                    "acc": column_data[max_idx]
+            }
+
+        triangle_map = {1: 1, 2: 2}
+        for i in range(len(table._rows)):
+            row = table._rows[i]
             row[1] = f"{row[1] * 100:.5f} ";
             row[2] = f"{row[2] * 100:.5f} ";
             if float(row[1]) > float(row[2]):
@@ -101,12 +117,17 @@ class Tester():
             else:
                 row[1] = f"{colortext.GREEN}{row[1]}%{colortext.RESET}";
                 row[2] = f"{colortext.GREEN}{row[2]}%{colortext.RESET}";
+            
+            for col_idx, rec_idx in triangle_map.items():
+                if i == recs[rec_idx]:
+                    row[col_idx] += f" {colortext.RED_TRIANGLE}";
+        
+
         title = 'Summary of Test Accuracy';
         title = title.center(len(table.get_string().splitlines()[0]));
         logger.info(f'{title}\n{table}');
 
-        result_to_save = {'end model':{}, 'best model':{}};
-        for p, acc_b, acc_e in zip(self.best_model.threshold_percents, result['best model'], result['end model']):
+        for p, acc_b, acc_e in zip(self.model_threshold_percents, result['best model'], result['end model']):
             result_to_save['best model'][f'acc_{p}'] = acc_b;
             result_to_save['end model'][f'acc_{p}'] = acc_e;
         json_util.jsonsave(result_to_save, save_dir + 'result.json');

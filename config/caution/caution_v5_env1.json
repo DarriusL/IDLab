@@ -53,7 +53,7 @@
         "name":"Caution",
         "update_start_epoch":5,
         "update_step":10,
-        "pretrained_enc_dir":"model/pretrained/caution_encoder_opt1/end",
+        "pretrained_enc_dir":"model/pretrained/CautionEncoder_v5_env1_opt1/end",
         "initial_threshold":0.5,
         "num_iterations":50, 
         "num_thresholds":20,

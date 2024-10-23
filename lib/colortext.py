@@ -13,3 +13,5 @@ WHITE = '\033[0;37m';
 GRAY = '\033[0;38m';
 
 RESET = '\033[0m';
+
+RED_TRIANGLE = f"{RED}▲{RESET}";

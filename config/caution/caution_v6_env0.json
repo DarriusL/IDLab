@@ -1,34 +1,34 @@
 {
     "seed":2024,
     "gpu_is_available":true,
-    "known_p_num":9,
+    "known_p_num":6,
     "known_env_num":1,
     "data":{
-        "dataset":"v5",
+        "dataset":"v6",
         "train":{
-            "dir":"data/v5/train_env1.mat",
+            "dir":"data/v6/support_caution_env0.mat",
+            "loader":{
+                "num_workers":4, 
+                "pin_memory":true,
+                "batch_size":1,
+                "drop_last":false,
+                "shuffle":false,
+                "prefetch_factor":4
+            }
+        },
+        "valid":{
+            "dir":"data/v6/valid_caution_env0.mat",
             "loader":{
                 "num_workers":4, 
                 "pin_memory":true,
                 "batch_size":8,
                 "drop_last":false,
-                "shuffle":true,
-                "prefetch_factor":4
-            }
-        },
-        "valid":{
-            "dir":"data/v5/valid_env1.mat",
-            "loader":{
-                "num_workers":4, 
-                "pin_memory":true,
-                "batch_size":16,
-                "drop_last":false,
-                "shuffle":true,
+                "shuffle":false,
                 "prefetch_factor":4
             }
         },
         "test":{
-            "dir":"data/v5/test_env1.mat",
+            "dir":"data/v6/test_env0.mat",
             "loader":{
                 "num_workers":4,
                 "pin_memory":true,
@@ -41,29 +41,22 @@
     },
     "train":{
         "is_DA":false,
-        "max_epoch":100,
-        "valid_start_epoch":5,
-        "valid_step":1,
-        "stop_train_step_valid_not_improve":30,
+        "max_epoch":50,
         "valid_metrics":"loss",
         "valid_metrics_less":true,
         "optimizer":{
-            "lr":1e-5,
+            "lr":1e-4,
             "weight_decay":1e-4
         }
     },
     "model":{
-        "name":"CAE",
-        "loss":"nmse",
-        "encoder_hid_layers":[
-            128,
-            1024,
-            1024
-        ],
-        "decoder_hid_layers":[
-            1024,
-            1024,
-            128
-        ]
+        "name":"Caution",
+        "update_start_epoch":5,
+        "update_step":10,
+        "pretrained_enc_dir":"",
+        "initial_threshold":0.75,
+        "num_iterations":100, 
+        "num_thresholds":200,
+        "threshold_step":0.001
     }
 }
