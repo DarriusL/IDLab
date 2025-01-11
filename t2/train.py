@@ -67,6 +67,7 @@ class DLBaseTrainer(object):
                     f'{util.s2hms((time.time() - t_train_start)/(epoch + 1) * (self.max_epoch - epoch - 1))}' + colortext.RESET + ']\n';
         if is_train:
             logger.info(f'[{self.model.name}]-[train]-[{device}] - [{self.config["data"]["dataset"]}] - [metrics: {self.valid_metrics.lower()}]\n'
+                        f'[trainer: {self.__class__.__name__}]\n'    
                         f'[epoch: {epoch + 1}/{self.max_epoch}] - lr:{self.scheduler.get_last_lr()[0]:.8f}\n' 
                         f'train loss:{loss[-1]:.8f}\n'+
                         acc_info + time_info);

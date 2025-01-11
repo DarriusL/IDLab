@@ -81,14 +81,52 @@ class GaitEnhance(Net):
             median_deviation_vals
         ], dim = 1);
 
-    def p_classify(self, amps):
+    @torch.no_grad()
+    def encoder(self, amps):
         features = self._ext_features(amps).permute(0, 2, 1, 3);
-        features1 = self.dropout(self.convnet(features));
-        id_probs = self.out_layer(features1.flatten(1, -1));
+        return self.dropout(self.convnet(features));
+
+    def p_classify(self, amps):
+        features = self.encoder(amps);
+        id_probs = self.out_layer(features.flatten(1, -1));
         return id_probs;
 
     def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
+class GaitEnhanceAL(GaitEnhance):
+    def __init__(self, model_cfg):
+        super().__init__(model_cfg);
+        self.lambda_ = model_cfg['lambda_'];
+
+        #env layer
+        env_cfg = model_cfg['env_classifier'];
+        env_cfg['activation_fn'] = net_util.get_activation_fn(env_cfg['activation_fn']);
+        env_cfg['dim_in'] = model_cfg['output_layer']['dim_in'];
+        env_cfg['dim_out'] = self.known_p_num;
+        self.env_layer = util.get_func_rets(net_util.get_mlp_net, env_cfg);
+
+    def cal_loss(self, amps, ids, envs, amps_t = None, ids_t = None, envs_t = None):
+        features = self.encoder(amps);
+        id_probs = self.out_layer(features.flatten(1, -1));
+        loss_id = torch.nn.CrossEntropyLoss()(id_probs, ids);
+
+        if amps_t is None:
+            return loss_id;
+
+        env_probs = self.env_layer(net_util.GradientReversalF.apply(features.flatten(1, -1), self.lambda_));
+        loss_env = torch.nn.CrossEntropyLoss()(env_probs, envs);
+
+        loss_t = loss_id + loss_env;
+
+        feature_t = self.encoder(amps_t);
+        id_probs_t = self.out_layer(feature_t.flatten(1, -1));
+        id_loss_t = torch.nn.CrossEntropyLoss()(id_probs_t, ids_t);
+
+        return loss_t + id_loss_t;
+
+
+
 glb_var.register_model('GaitEnhance', GaitEnhance);
+glb_var.register_model('GaitEnhanceAL', GaitEnhanceAL);

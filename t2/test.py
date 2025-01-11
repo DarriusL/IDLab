@@ -1,4 +1,4 @@
-import torch, os, tqdm, sys
+import torch, tqdm, sys
 import numpy as np
 from prettytable import PrettyTable
 from copy import deepcopy

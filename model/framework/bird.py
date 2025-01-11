@@ -141,7 +141,9 @@ class BIRDEncoder(Net):
         id_probs = self.p_classifier(feature);
         id_loss = torch.nn.CrossEntropyLoss()(id_probs, ids);
         if amps_t is None:
-            #input is from target domin or all data from one domin()
+            #1.input is from target domin
+            #2.all data from one domin()
+            #3.ablation experiment: no Adversarial Learning
             return id_loss;
         env_probs = self.env_classifier(net_util.GradientReversalF.apply(feature, self.lambda_));
         env_loss = torch.nn.CrossEntropyLoss()(env_probs, envs);
