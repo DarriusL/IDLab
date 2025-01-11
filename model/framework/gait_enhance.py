@@ -104,7 +104,7 @@ class GaitEnhanceAL(GaitEnhance):
         env_cfg = model_cfg['env_classifier'];
         env_cfg['activation_fn'] = net_util.get_activation_fn(env_cfg['activation_fn']);
         env_cfg['dim_in'] = model_cfg['output_layer']['dim_in'];
-        env_cfg['dim_out'] = self.known_p_num;
+        env_cfg['dim_out'] = self.known_env_num;
         self.env_layer = util.get_func_rets(net_util.get_mlp_net, env_cfg);
 
     def cal_loss(self, amps, ids, envs, amps_t = None, ids_t = None, envs_t = None):
