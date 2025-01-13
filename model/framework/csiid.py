@@ -1,6 +1,7 @@
 import torch
-from lib import glb_var
+from lib import glb_var, util
 from model.framework.base import Net
+from model import net_util
 
 class CSIID(Net):
     def __init__(self, model_cfg):
@@ -28,7 +29,7 @@ class CSIID(Net):
         )
 
         # LSTM layer
-        self.lstm = torch.nn.LSTM(input_size=480, hidden_size=128, num_layers=1, batch_first=True)
+        self.lstm = torch.nn.LSTM(input_size=480, hidden_size=128, num_layers=5, batch_first=True)
 
         # Fully connected layer
         self.fc = torch.nn.Linear(128, self.known_p_num)
@@ -36,9 +37,10 @@ class CSIID(Net):
         # Softmax
         self.softmax = torch.nn.Softmax(dim=1)
 
-    def p_classify(self, x):
+    @torch.no_grad()
+    def encoder(self, amps):
 
-        x = x.permute(0, 2, 1, 3)
+        x = amps.permute(0, 2, 1, 3)
 
         # Convolutional layers
         x = self.conv1(x)
@@ -55,17 +57,54 @@ class CSIID(Net):
         # LSTM layer
         x, _ = self.lstm(x)
         x = x[:, -1, :]  # Take the output from the last time step
+        return x;
 
-        # Fully connected layer
-        x = self.fc(x)
+    def p_classifier(self, features):
+        x = self.fc(features)
 
         # Softmax
         x = self.softmax(x)
+        return x;
 
+    def p_classify(self, x):
+        x = self.encoder(x);
+        x = self.p_classifier(x);
         return x
     
     def cal_loss(self, amps, ids, envs):
         id_probs = self.p_classify(amps);
         return torch.nn.CrossEntropyLoss()(id_probs, ids);
 
-glb_var.register_model('CSIID', CSIID)
+class CSIIDAL(CSIID):
+    def __init__(self, model_cfg):
+        super().__init__(model_cfg);
+        self.lambda_ = model_cfg['lambda_'];
+
+        #env layer
+        env_cfg = model_cfg['env_classifier'];
+        env_cfg['activation_fn'] = net_util.get_activation_fn(env_cfg['activation_fn']);
+        env_cfg['dim_in'] = 128;
+        env_cfg['dim_out'] = self.known_env_num;
+        self.env_layer = util.get_func_rets(net_util.get_mlp_net, env_cfg);
+
+    def cal_loss(self, amps, ids, envs, amps_t = None, ids_t = None, envs_t = None):
+        features = self.encoder(amps);
+        id_probs = self.p_classifier(features);
+        loss_id = torch.nn.CrossEntropyLoss()(id_probs, ids);
+
+        if amps_t is None:
+            return loss_id;
+
+        env_probs = self.env_layer(net_util.GradientReversalF.apply(features, self.lambda_));
+        loss_env = torch.nn.CrossEntropyLoss()(env_probs, envs);
+
+        loss_t = loss_id + loss_env;
+
+        feature_t = self.encoder(amps_t);
+        id_probs_t = self.p_classifier(feature_t);
+        id_loss_t = torch.nn.CrossEntropyLoss()(id_probs_t, ids_t);
+
+        return loss_t + id_loss_t;
+
+glb_var.register_model('CSIID', CSIID);
+glb_var.register_model('CSIIDAL', CSIIDAL);

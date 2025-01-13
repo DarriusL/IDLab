@@ -37,6 +37,7 @@ class CautionEncoder(Net):
         FL_cfg['dim_out'] = self.do;
         FL_cfg['dim_in'] = channels[-1] * 750 * 7;
         self.FeatureLayer = util.get_func_rets(net_util.get_mlp_net, FL_cfg);
+
         self.pcenters = None;
         self.remind = False;
         self.is_Intrusion_Detection = False
@@ -45,6 +46,7 @@ class CautionEncoder(Net):
         #amps:[B, 6000, 3, 56] -> [B, 3, 6000, 56]
         feature1 = self.cnn(amps.permute(0, 2, 1, 3));
         feature2 = self.FeatureLayer(feature1.reshape(amps.shape[0], -1));
+        #[B, do]
         return feature2;
 
     @torch.no_grad()
@@ -82,6 +84,7 @@ class CautionEncoder(Net):
 
     def pre_test_hook(self, tester):
         self.update_center(tester.support_loader);
+
 
 class Caution(Net):
     def __init__(self, model_cfg) -> None:

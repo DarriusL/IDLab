@@ -11,6 +11,8 @@
 *.txt
 !requirements.txt
 *.mlx
+*.rar
+*.zip
 
 #Data
 __pycache__/
